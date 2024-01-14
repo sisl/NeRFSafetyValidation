@@ -225,7 +225,7 @@ if __name__ == "__main__":
     mass = 1.           # mass of drone
     g = 10.             # gravitational constant
     I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]   # inertia tensor
-    path = './sim_img_cache'     # Directory where pose and images are exchanged
+    path = 'sim_img_cache/'     # Directory where pose and images are exchanged
     blend_file = 'stonehenge.blend'     # Blend file of your scene
 
     ### PLANNER CONFIGS
