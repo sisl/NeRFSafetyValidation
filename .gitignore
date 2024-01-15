@@ -17,7 +17,7 @@ sim_img_cache/*
 stone_nerf
 
 # built extensions
-# raymarching/*
-# shencoder/*
-# gridencoder/*
-# freqencoder/*
+raymarching/*
+shencoder/*
+gridencoder/*
+freqencoder/*
