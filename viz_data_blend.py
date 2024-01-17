@@ -80,7 +80,9 @@ if __name__ == "__main__":
         time_step += 1
 
     # save the Blender file
-    blend_file_path =  f"{bpy.data.filepath}_result"
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join("results", blend_file_path))
+    blend_file_name = os.path.basename(bpy.data.filepath)
+    blend_file_name = os.path.splitext(blend_file_name)[0]
+    blend_file_path =  f"{blend_file_name}_result.blend"
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join("./results/", blend_file_path))
     print(f"Blender file saved at: {blend_file_path}")
     print("--------------------    DONE WITH BLENDER SCRIPT    --------------------")
