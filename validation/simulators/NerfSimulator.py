@@ -20,6 +20,7 @@ class NerfSimulator(gym.Env):
         self.planner_cfg = planner_cfg
         self.start_state = start_state
         self.end_state = end_state
+        self.true_states = start_state.cpu().detach().numpy()
         self.density_fn = density_fn
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
@@ -50,7 +51,7 @@ class NerfSimulator(gym.Env):
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
             true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
-            true_states = np.vstack((true_states, true_state))
+            self.true_states = np.vstack((self.true_states, true_state))
 
             # TODO: check for type error
             nerf_image = self.filter.render_from_pose(true_pose)
