@@ -9,9 +9,9 @@ from validation.simulators.NerfSimulator import NerfSimulator
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
-def validate(simulator):
+def validate(simulator, disturbance):
     simulator.reset()
-    simulator.step()
+    simulator.step(disturbance)
     return
 
 ####################### END OF MAIN LOOP ##########################################
@@ -253,8 +253,12 @@ if __name__ == "__main__":
     # Grabs density from NeRF Neural Network
     density_fn = lambda x: model.density(x.reshape((-1, 3)) @ rot)['sigma'].reshape(x.shape[:-1])
 
-    simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, extra_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
   
+    # TODO: configure disturbances
+    noise_std = extra_cfg['mpc_noise_std']
+    noise_mean = extra_cfg['mpc_noise_mean']
+    noise = torch.normal(noise_mean, noise_std)
     # Main loop
     validate(simulator)
     
