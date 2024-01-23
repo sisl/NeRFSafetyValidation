@@ -116,3 +116,4 @@ class NerfSimulator(gym.Env):
         (basefolder / "replan_costs").mkdir()
         (basefolder / "estimator_data").mkdir()
         print("created", basefolder)
+        self.basefolder = basefolder
