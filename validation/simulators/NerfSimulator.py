@@ -1,7 +1,9 @@
 import pathlib
 import shutil
 import gym
+import numpy as np
 import torch
+from gym.spaces import Box
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 
@@ -10,18 +12,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class NerfSimulator(gym.Env):
     """Class template for safety validation."""
 
-    def __init__(self, density_fn):
+    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, extra_cfg, get_rays_fn, render_fn, density_fn):
         super(NerfSimulator, self).__init__()
 
-        # TODO: define action and observation space as in example:
-        # self.action_space = spaces.Discrete(N_DISCRETE_ACTIONS)
-        # self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(N_OBSERVATIONS,), dtype=np.float32)
-        self.action_space = None
-        self.observation_space = None
-        self.start_state = self.action_space[0]
-        self.start_state = self.action_space[-1]
-        self.planner_cfg - {}   # TODO: populate using and env config json
+        self.action_space = None # TODO: Define vector here
+        self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800)
+        self.planner_cfg = planner_cfg
+        self.start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
+        agent_cfg['x0'] = start_state
+        self.end_state = end_state
         self.density_fn = density_fn
+        self.dynamics = Agent(agent_cfg, camera_cfg, None)
+        self.filter = Estimator(filter_cfg, self.agent, start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
+        self.extra_cfg = extra_cfg
         self.traj = None
         self.basefolder
 
@@ -35,7 +38,46 @@ class NerfSimulator(gym.Env):
             done (bool): whether the episode has ended, in which case further step() calls will return undefined results.
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        pass
+        try:
+            # In MPC style, take the next action recommended from the planner
+            # if iter < steps - 5:
+            #     action = traj.get_next_action().clone().detach()
+            # else:
+            #     action = traj.get_actions()[iter - steps + 5, :]
+            action = self.traj.get_next_action().clone().detach()
+
+            noise_std = self.extra_cfg['mpc_noise_std']
+            noise_mean = self.extra_cfg['mpc_noise_mean']
+            noise = torch.normal(noise_mean, noise_std)
+
+            # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
+            # for simulation purposes in order to benchmark performance. They are the true state of the agent
+            # subjected to noise. gt_img is the observation.
+            true_pose, true_state, gt_img = self.agent.step(action, noise=noise)
+            true_states = np.vstack((true_states, true_state))
+
+            # TODO: check for type error
+            nerf_image = self.filter.render_from_pose(true_pose)
+            nerf_image = torch.squeeze(nerf_image).cpu().detach()
+            nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
+            # convert to torch object
+
+            # Given the planner's recommended action and the observation, perform state estimation. true_pose
+            # is here only to benchmark performance. 
+            state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
+
+            # if iter < steps - 5:
+            #state estimate is 12-vector. Transform to 18-vector
+            state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
+
+            # Let the planner know where the agent is estimated to be
+            self.traj.update_state(state_est)
+
+            # Replan from the state estimate
+            self.traj.learn_update(iter)
+            return
+        except KeyboardInterrupt:
+            return
 
     def reset(self):
         """
