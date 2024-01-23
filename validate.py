@@ -259,8 +259,9 @@ if __name__ == "__main__":
     noise_std = extra_cfg['mpc_noise_std']
     noise_mean = extra_cfg['mpc_noise_mean']
     noise = torch.normal(noise_mean, noise_std)
+    
     # Main loop
-    validate(simulator)
+    validate(simulator, noise)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
