@@ -20,11 +20,11 @@ class NerfSimulator(gym.Env):
         self.planner_cfg = planner_cfg
         self.start_state = start_state
         self.end_state = end_state
-        self.true_states = start_state.cpu().detach().numpy()
         self.density_fn = density_fn
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
+        self.true_states = agent_cfg['x0'].cpu().detach().numpy()
         self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
         self.filter = Estimator(filter_cfg, self.dynamics, start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
         self.traj = None
