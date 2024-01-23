@@ -12,21 +12,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class NerfSimulator(gym.Env):
     """Class template for safety validation."""
 
-    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, extra_cfg, get_rays_fn, render_fn, density_fn):
+    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, extra_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
         super(NerfSimulator, self).__init__()
 
         self.action_space = None # TODO: Define vector here
         self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800)
         self.planner_cfg = planner_cfg
-        self.start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
-        agent_cfg['x0'] = start_state
+        self.start_state = start_state
         self.end_state = end_state
         self.density_fn = density_fn
-        self.dynamics = Agent(agent_cfg, camera_cfg, None)
-        self.filter = Estimator(filter_cfg, self.agent, start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
+
+        # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
+        agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
+        self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
+        self.filter = Estimator(filter_cfg, self.dynamics, start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
         self.extra_cfg = extra_cfg
         self.traj = None
-        self.basefolder
 
 
     def step(self, action):
@@ -53,7 +54,7 @@ class NerfSimulator(gym.Env):
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
-            true_pose, true_state, gt_img = self.agent.step(action, noise=noise)
+            true_pose, true_state, gt_img = self.dynamics.step(action, noise=noise)
             true_states = np.vstack((true_states, true_state))
 
             # TODO: check for type error
@@ -103,15 +104,15 @@ class NerfSimulator(gym.Env):
 
     def clear_workspace(self):
         """Clears the workspace directory."""
-        basefolder = pathlib.Path("paths") / pathlib.Path(self.planner_cfg['exp_name'])
+        basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
         if basefolder.exists():
             print(basefolder, "already exists!")
-            shutil.rmtree(basefolder)
+            if input("Clear it before continuing? [y/N]:").lower() == "y":
+                shutil.rmtree(basefolder)
         basefolder.mkdir()
         (basefolder / "init_poses").mkdir()
         (basefolder / "init_costs").mkdir()
         (basefolder / "replan_poses").mkdir()
         (basefolder / "replan_costs").mkdir()
         (basefolder / "estimator_data").mkdir()
-        self.basefolder = basefolder
         print("created", basefolder)
