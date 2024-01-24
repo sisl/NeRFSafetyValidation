@@ -17,13 +17,16 @@ def validate(simulator, disturbance):
 ####################### END OF MAIN LOOP ##########################################
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str)
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --preload")
+    parser.add_argument('--test', action='store_true', help="test mode")
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', type=int, default=0)
 
     ### training options
+    parser.add_argument('--iters', type=int, default=30000, help="training iters")
+    parser.add_argument('--lr', type=float, default=1e-2, help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
     parser.add_argument('--num_rays', type=int, default=4096, help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true', help="use CUDA raymarching instead of pytorch")
@@ -248,7 +251,7 @@ if __name__ == "__main__":
 
     # Grabs density from NeRF Neural Network
     density_fn = lambda x: model.density(x.reshape((-1, 3)) @ rot)['sigma'].reshape(x.shape[:-1])
-    
+
     # Rendering from the NeRF functions
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
