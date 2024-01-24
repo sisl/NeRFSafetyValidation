@@ -94,6 +94,7 @@ class NerfSimulator(gym.Env):
         # Reinitialize Planner
         traj = Planner(self.start_state, self.end_state, self.planner_cfg, self.density_fn)
         traj.basefolder = self.basefolder
+        self.filter.basefolder = self.basefolder
 
         # Create a coarse trajectory to initialize the planner by using A*. 
         traj.a_star_init()
