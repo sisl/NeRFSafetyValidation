@@ -1,6 +1,7 @@
 import pathlib
 import shutil
 import gym
+import cv2
 import numpy as np
 import torch
 from gym.spaces import Box
@@ -27,7 +28,7 @@ class NerfSimulator(gym.Env):
         true_start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
         self.true_states = true_start_state.cpu().detach().numpy()
         self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
-        self.filter = Estimator(filter_cfg, self.dynamics, start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
+        self.filter = Estimator(filter_cfg, self.dynamics, true_start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
         self.traj = None
 
 
@@ -57,13 +58,16 @@ class NerfSimulator(gym.Env):
             true_pose = true_pose.to(device)
 
             # TODO: check for type error
-            nerf_image = self.filter.render_from_pose(true_pose)
-            nerf_image = torch.squeeze(nerf_image).cpu().detach()
-            nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
+            with torch.no_grad():
+                nerf_image = self.filter.render_from_pose(true_pose)
+                nerf_image = torch.squeeze(nerf_image).cpu().detach()
+                nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
+                nerf_image_reshaped = cv2.normalize(nerf_image_reshaped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             # convert to torch object
 
             # Given the planner's recommended action and the observation, perform state estimation. true_pose
             # is here only to benchmark performance. 
+            true_pose = true_pose.cpu().detach().numpy()
             state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
 
             # if iter < steps - 5:
