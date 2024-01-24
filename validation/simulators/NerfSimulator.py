@@ -53,6 +53,8 @@ class NerfSimulator(gym.Env):
             # subjected to noise. gt_img is the observation.
             true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
             self.true_states = np.vstack((self.true_states, true_state))
+            true_pose = torch.from_numpy(true_pose)
+            true_pose = true_pose.to(device)
 
             # TODO: check for type error
             nerf_image = self.filter.render_from_pose(true_pose)
