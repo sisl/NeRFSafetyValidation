@@ -65,7 +65,8 @@ class NerfSimulator(gym.Env):
                 nerf_image = self.filter.render_from_pose(true_pose)
                 nerf_image = torch.squeeze(nerf_image).cpu().detach().numpy()
                 nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
-                nerf_image_reshaped = cv2.normalize(nerf_image_reshaped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                nerf_image_reshaped *= 255
+                nerf_image_reshaped = nerf_image_reshaped.astype(np.uint8)
             # convert to torch object
             
             print("saving image files")
