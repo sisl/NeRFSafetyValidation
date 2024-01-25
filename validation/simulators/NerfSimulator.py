@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import torch
 from gym.spaces import Box
+import matplotlib.image
+import pdb
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 
@@ -59,11 +61,18 @@ class NerfSimulator(gym.Env):
 
             # TODO: check for type error
             with torch.no_grad():
+                print(f"Calling nerf render with pose {true_pose}")
                 nerf_image = self.filter.render_from_pose(true_pose)
                 nerf_image = torch.squeeze(nerf_image).cpu().detach().numpy()
                 nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
                 nerf_image_reshaped = cv2.normalize(nerf_image_reshaped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             # convert to torch object
+            
+            print("saving image files")
+            gt_img_tuple = gt_img.cpu().detach().numpy()
+            matplotlib.image.imsave("./sim_img_cache/blenderRender.png", gt_img_tuple)
+            
+            matplotlib.image.imsave("./sim_img_cache/NeRFRender.png", nerf_image_reshaped)
 
             # Given the planner's recommended action and the observation, perform state estimation. true_pose
             # is here only to benchmark performance. 
