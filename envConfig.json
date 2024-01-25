@@ -1,0 +1,49 @@
+{
+  "estimator_cfg": {
+    "dil_iter": 3,
+    "kernel_size": 5,
+    "batch_size": 1024,
+    "lrate": 1e-3,
+    "N_iter": 300,
+    "render_viz": true,
+    "show_rate": [20, 100]
+  },
+  "agent_cfg": {
+    "body_lims": [
+      [-0.05, 0.05],
+      [-0.05, 0.05],
+      [-0.02, 0.02]
+    ],
+    "body_nbins": [10, 10, 5],
+    "mass": 1.0,
+    "g": 10.0,
+    "I": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    "path": "sim_img_cache/",
+    "blend_file": "stonehenge.blend"
+  },
+  "planner_cfg": {
+    "start_pos": [0.39, -0.67, 0.2],
+    "end_pos": [-0.4, 0.55, 0.16],
+    "start_R": [0.0, 0.0, 0.0],
+    "end_R": [0.0, 0.0, 0.0],
+    "T_final": 2.0,
+    "steps": 20,
+    "planner_lr": 0.001,
+    "epochs_init": 2500,
+    "fade_out_epoch": 0,
+    "fade_out_sharpness": 10,
+    "epochs_update": 250
+  },
+  "mpc_cfg": {
+    "mpc_noise_mean": [0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "mpc_noise_std": [2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2, 2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2]
+  },
+  "camera_cfg": {
+    "half_res": false,
+    "white_bg": true,
+    "res_x": 800,    
+    "res_y": 800,
+    "trans": true,
+    "mode": "RGBA"
+  }
+}
