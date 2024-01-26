@@ -56,7 +56,7 @@ class NerfSimulator(gym.Env):
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
-            true_pose, true_state, _ = self.dynamics.step(action, noise=disturbance)
+            true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
             self.true_states = np.vstack((self.true_states, true_state))
             true_pose = torch.from_numpy(true_pose)
             true_pose = true_pose.to(device)
