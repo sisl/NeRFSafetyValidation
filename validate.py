@@ -13,10 +13,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
 def validate(simulator, disturbance):
-    # TODO: read from env config
-    for _ in range(1):
+    n_simulations = 1
+    for _ in range(n_simulations):
         simulator.reset()
-        for _ in trange(24):
+        for _ in trange(steps):
             simulator.step(disturbance)
             
     # Visualize trajectories in Blender
