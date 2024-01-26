@@ -1,7 +1,6 @@
 import pathlib
 import shutil
 import gym
-import cv2
 import numpy as np
 import torch
 from gym.spaces import Box
@@ -30,6 +29,8 @@ class NerfSimulator(gym.Env):
         self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
         self.filter = Estimator(filter_cfg, self.dynamics, true_start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
         self.traj = None
+        self.steps = 0
+        self.iter = 0
 
 
     def step(self, disturbance):
@@ -43,21 +44,21 @@ class NerfSimulator(gym.Env):
         """
         try:
             # In MPC style, take the next action recommended from the planner
-            # if iter < steps - 5:
-            #     action = traj.get_next_action().clone().detach()
-            # else:
-            #     action = traj.get_actions()[iter - steps + 5, :]
-            action = self.traj.get_next_action().clone().detach()
+            if self.iter < self.steps - 5:
+                action = self.traj.get_next_action().clone().detach()
+            else:
+                action = self.traj.get_actions()[self.iter - self.steps + 5, :]
+
+            self.iter += 1
 
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
-            true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
+            true_pose, true_state, _ = self.dynamics.step(action, noise=disturbance)
             self.true_states = np.vstack((self.true_states, true_state))
             true_pose = torch.from_numpy(true_pose)
             true_pose = true_pose.to(device)
 
-            # TODO: check for type error
             with torch.no_grad():
                 nerf_image = self.filter.render_from_pose(true_pose)
                 nerf_image = torch.squeeze(nerf_image).cpu().detach().numpy()
@@ -71,15 +72,15 @@ class NerfSimulator(gym.Env):
             true_pose = true_pose.cpu().detach().numpy()
             state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
 
-            # if iter < steps - 5:
-            #state estimate is 12-vector. Transform to 18-vector
-            state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
+            if self.iter < self.steps - 5:
+                #state estimate is 12-vector. Transform to 18-vector
+                state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
 
-            # Let the planner know where the agent is estimated to be
-            self.traj.update_state(state_est)
+                # Let the planner know where the agent is estimated to be
+                self.traj.update_state(state_est)
 
-            # Replan from the state estimate
-            self.traj.learn_update(iter)
+                # Replan from the state estimate
+                self.traj.learn_update(self.iter)
             return
         except KeyboardInterrupt:
             return
@@ -105,6 +106,7 @@ class NerfSimulator(gym.Env):
         traj.learn_init()
 
         self.traj = traj
+        self.steps = traj.get_actions().shape[0]
 
 
     def clear_workspace(self):

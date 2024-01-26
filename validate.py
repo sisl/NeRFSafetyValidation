@@ -1,6 +1,8 @@
+import subprocess
 import numpy as np
 import torch
 import argparse
+from tqdm import trange
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
@@ -10,8 +12,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
 def validate(simulator, disturbance):
-    simulator.reset()
-    simulator.step(disturbance)
+    # TODO: read from env config
+    for _ in range(1):
+        simulator.reset()
+        for _ in trange(24):
+            simulator.step(disturbance)
+            
+    # Visualize trajectories in Blender
+    bevel_depth = 0.02      # Size of the curve visualized in blender
+    subprocess.run(['blender', blend_file, '-P', 'viz_data_blend.py', '--background', '--', opt.workspace, str(bevel_depth)])
     return
 
 ####################### END OF MAIN LOOP ##########################################
