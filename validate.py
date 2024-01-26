@@ -7,6 +7,7 @@ from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
 from validation.simulators.NerfSimulator import NerfSimulator
+import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -95,6 +96,10 @@ if __name__ == "__main__":
 
     # TODO: figure out how to seed everything
 
+    with open('envConfig.json', 'r') as json_file:
+        envConfig = json.load(json_file)
+    print(f"Reading environment parameters from envConfig.json:\n{envConfig}")
+
     model = NeRFNetwork(
         encoding="hashgrid",
         bound=opt.bound,
@@ -112,44 +117,37 @@ if __name__ == "__main__":
     dataset = NeRFDataset(opt, device=device, type='test')        #Importing dataset in order to get the same camera intrinsics as training
 
 
-    ### ESTIMATOR CONFIGS
-    dil_iter = 3        # Number of times to dilate mask around features in observed image
-    kernel_size = 5     # Kernel of dilation 
-    batch_size = 1024   # How many rays to sample in dilated mask
-    lrate_relative_pose_estimation = 1e-3       # State estimator learning rate
-    N_iter = 300        # Number of times to perform gradient descent in state estimator
-
+    ### ESTIMATOR CONFIGS (ripped directly from JSON)
     #Remark: We don't have a measurement noise covariance, or rather we just set it to identity since it's not clear
     #what a covariance on a random batch of pixels should be. 
     sig0 = 1*np.eye(12)     # Initial state covariance
     Q = 1*np.eye(12)        # Process noise covariance
 
     ### AGENT CONFIGS
+    agent_cfg = envConfig["agent_cfg"]
 
     # Extent of the agent body, centered at origin.
     # low_x, high_x
     # low_y, high_y
     # low_z, high_z
-    body_lims = np.array([
-        [-0.05, 0.05],
-        [-0.05, 0.05],
-        [-0.02, 0.02]
-    ])
+    body_lims = np.array(agent_cfg["body_lims"])
 
     # Discretizations of sample points in x,y,z direction
-    body_nbins = [10, 10, 5]
+    body_nbins = agent_cfg["body_nbins"]
 
-    mass = 1.           # mass of drone
-    g = 10.             # gravitational constant
-    I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]   # inertia tensor
-    path = 'sim_img_cache/'     # Directory where pose and images are exchanged
-    blend_file = 'stonehenge.blend'     # Blend file of your scene
+    mass = agent_cfg["mass"]           # mass of drone
+    g = agent_cfg["g"]             # gravitational constant
+    I =  agent_cfg["I"]   # inertia tensor
+    path = agent_cfg["path"]     # Directory where pose and images are exchanged
+    blend_file = agent_cfg["blend_file"]     # Blend file of your scene
 
     ### PLANNER CONFIGS
+    planner_cfg = envConfig["planner_cfg"]
+
     # X, Y, Z
     #STONEHENGE
-    start_pos = [0.39, -0.67, 0.2]      # Starting position [x,y,z]
-    end_pos = [-0.4, 0.55, 0.16]        # Goal position
+    start_pos = planner_cfg["start_pos"]      # Starting position [x,y,z]
+    end_pos = planner_cfg["end_pos"]        # Goal position
     
     # start_pos = [-0.09999999999999926,
     #             -0.8000000000010297,
@@ -159,24 +157,25 @@ if __name__ == "__main__":
     #             0.09999999999986946]
 
     # Rotation vector
-    start_R = [0., 0., 0.0]     # Starting orientation (Euler angles)
-    end_R = [0., 0., 0.0]       # Goal orientation
+    start_R = planner_cfg["start_R"]      # Starting orientation (Euler angles)
+    end_R = planner_cfg["end_R"]        # Goal orientation
 
     # Angular and linear velocities
     init_rates = torch.zeros(3) # All rates
 
-    T_final = 2.                # Final time of simulation
-    steps = 20                  # Number of time steps to run simulation
+    T_final = planner_cfg["T_final"]       # Final time of simulation
+    steps = planner_cfg["steps"]                   # Number of time steps to run simulation
 
-    planner_lr = 0.001          # Learning rate when learning a plan
-    epochs_init = 2500          # Num. Gradient descent steps to perform during initial plan
-    fade_out_epoch = 0
-    fade_out_sharpness = 10
-    epochs_update = 250         # Num. grad descent steps to perform when replanning
+    planner_lr = planner_cfg["planner_lr"]           # Learning rate when learning a plan
+    epochs_init = planner_cfg["epochs_init"]           # Num. Gradient descent steps to perform during initial plan
+    fade_out_epoch = planner_cfg["fade_out_epoch"] 
+    fade_out_sharpness = planner_cfg["fade_out_sharpness"] 
+    epochs_update = planner_cfg["epochs_update"]         # Num. grad descent steps to perform when replanning
 
     ### MPC CONFIGS
-    mpc_noise_mean = [0., 0., 0., 0, 0, 0, 0, 0, 0, 0, 0, 0]    # Mean of process noise [positions, lin. vel, angles, ang. rates]
-    mpc_noise_std = [2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2, 2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2]    # standard dev. of noise
+    mpc_cfg = envConfig["mpc_cfg"]
+    mpc_noise_mean = mpc_cfg["mpc_noise_mean"]    # Mean of process noise [positions, lin. vel, angles, ang. rates]
+    mpc_noise_std = mpc_cfg["mpc_noise_std"]     # standard dev. of noise
 
     ### Integration
     start_pos = torch.tensor(start_pos).float()
@@ -218,32 +217,17 @@ if __name__ == "__main__":
     'I': torch.tensor(I).float().to(device)
     }
 
-    camera_cfg = {
-    'half_res': False,      # Half resolution
-    'white_bg': True,       # White background
-    'path': path,           # Directory where pose and images are stored
-    'res_x': 800,           # x resolution (BEFORE HALF RES IS APPLIED!)
-    'res_y': 800,           # y resolution
-    'trans': True,          # Boolean    (Transparency)
-    'mode': 'RGBA'          # Can be RGB-Alpha, or just RGB
-    }
+    camera_cfg = envConfig["camera_cfg"]
+    camera_cfg["path"] = path
 
     blender_cfg = {
     'blend_path': blend_file,
     'script_path': 'viz_func.py'        # Path to Blender script
     }
 
-    filter_cfg = {
-    'dil_iter': dil_iter,
-    'batch_size': batch_size,
-    'kernel_size': kernel_size,
-    'lrate': lrate_relative_pose_estimation,
-    'N_iter': N_iter,
-    'sig0': torch.tensor(sig0).float().to(device),
-    'Q': torch.tensor(Q).float().to(device),
-    'render_viz': True,
-    'show_rate': [20, 100]
-    }
+    filter_cfg = envConfig["estimator_cfg"]
+    filter_cfg["sig0"] = torch.tensor(sig0).float().to(device)
+    filter_cfg["Q"] = torch.tensor(Q).float().to(device)
 
     extra_cfg = {
     'mpc_noise_std': torch.tensor(mpc_noise_std),
