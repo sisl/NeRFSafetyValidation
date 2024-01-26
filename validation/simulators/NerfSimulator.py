@@ -51,8 +51,6 @@ class NerfSimulator(gym.Env):
             else:
                 action = self.traj.get_actions()[self.iter - self.steps + 5, :]
 
-            self.iter += 1
-
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
@@ -90,6 +88,8 @@ class NerfSimulator(gym.Env):
 
                 # Replan from the state estimate
                 self.traj.learn_update(self.iter)
+
+            self.iter += 1
             return
         except KeyboardInterrupt:
             return
