@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from gym.spaces import Box
 import matplotlib.image
-import pdb
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 
@@ -17,8 +16,8 @@ class NerfSimulator(gym.Env):
     def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
         super(NerfSimulator, self).__init__()
 
-        self.action_space = None # TODO: Define vector here
-        self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800)
+        self.action_space = None # TODO: Define disturbance vector here
+        self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800) TODO: change this to the state vector
         self.planner_cfg = planner_cfg
         self.start_state = start_state
         self.end_state = end_state
