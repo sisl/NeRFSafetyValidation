@@ -2,7 +2,7 @@ import torch
 from torch._C import device
 import numpy as np
 import json
-
+import pdb
 from .math_utils import rot_matrix_to_vec
 from .quad_helpers import astar, next_rotation
 
@@ -62,6 +62,8 @@ class Planner:
         return torch.cat( [pos, torch.tensor([angle]) ], dim = -1).detach()
 
     def a_star_init(self):
+        # pdb.set_trace()
+
         side = 100 #PARAM grid size
 
         if self.CHURCH:

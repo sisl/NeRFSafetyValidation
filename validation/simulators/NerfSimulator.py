@@ -27,6 +27,7 @@ class NerfSimulator(gym.Env):
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
         true_start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
         self.true_states = true_start_state.cpu().detach().numpy()
+        self.current_state = None
         self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
         self.filter = Estimator(filter_cfg, self.dynamics, true_start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
         self.traj = None
@@ -54,6 +55,7 @@ class NerfSimulator(gym.Env):
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
             true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
+            self.current_state = true_state
             self.true_states = np.vstack((self.true_states, true_state))
             true_pose = torch.from_numpy(true_pose)
             true_pose = true_pose.to(device)

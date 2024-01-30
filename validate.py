@@ -13,12 +13,27 @@ import json
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
-def validate(simulator, stresstest, noise_mean, noise_std):
+def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
+    
+    # set up collision grid
+    # taken from nav/quad_plot.py a_star_init
+    side = 100
+    linspace = torch.linspace(-1, 1, side)
+    coods = torch.stack(torch.meshgrid(linspace, linspace, linspace), dim=-1)
+    kernel_size = 5
+    output = density_fn(coods)
+    maxpool = torch.nn.MaxPool3d(kernel_size = kernel_size)
+
+    # 20, 20, 20
+    occupied = maxpool(output[None, None,...])[0, 0, ...] > 0.3
+    print(occupied.shape)
+    print(occupied)
+    # call simulation
     n_simulations = 1
     
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
-        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std)
+        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, occupied)
         mc.validate()
     else:
         print(f"Unrecognized stress test {stresstest}")
@@ -258,7 +273,7 @@ if __name__ == "__main__":
     # noise = torch.normal(noise_mean, noise_std)
     
     # Main loop
-    validate(simulator, "Monte Carlo", noise_std, noise_mean)
+    validate(simulator, "Monte Carlo", noise_mean, noise_std, density_fn)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
