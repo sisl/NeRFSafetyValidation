@@ -7,18 +7,23 @@ from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
 from validation.simulators.NerfSimulator import NerfSimulator
+from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
-def validate(simulator, disturbance):
+def validate(simulator, stresstest, noise_mean, noise_std):
     n_simulations = 1
-    for _ in range(n_simulations):
-        simulator.reset()
-        for _ in trange(steps):
-            simulator.step(disturbance)
-            
+    
+    if stresstest == "Monte Carlo":
+        print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
+        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std)
+        mc.validate()
+    else:
+        print(f"Unrecognized stress test {stresstest}")
+        exit()
+
     # Visualize trajectories in Blender
     bevel_depth = 0.02      # Size of the curve visualized in blender
     subprocess.run(['blender', blend_file, '-P', 'viz_data_blend.py', '--background', '--', opt.workspace, str(bevel_depth)])
@@ -250,10 +255,10 @@ if __name__ == "__main__":
     # TODO: configure disturbances
     noise_std = extra_cfg['mpc_noise_std']
     noise_mean = extra_cfg['mpc_noise_mean']
-    noise = torch.normal(noise_mean, noise_std)
+    # noise = torch.normal(noise_mean, noise_std)
     
     # Main loop
-    validate(simulator, noise)
+    validate(simulator, "Monte Carlo", noise_std, noise_mean)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
