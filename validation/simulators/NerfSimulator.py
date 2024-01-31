@@ -35,7 +35,7 @@ class NerfSimulator(gym.Env):
         self.iter = 0
 
 
-    def step(self, disturbance):
+    def step(self, disturbance, num_interpolated_points=10):
         """
         Run one timestep of the environment's dynamics.
         Returns:
@@ -46,10 +46,7 @@ class NerfSimulator(gym.Env):
         """
         try:
             # In MPC style, take the next action recommended from the planner
-            if self.iter < self.steps - 5:
-                action = self.traj.get_next_action().clone().detach()
-            else:
-                action = self.traj.get_actions()[self.iter - self.steps + 5, :]
+            action = self.traj.get_next_action().clone().detach()
 
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
@@ -59,6 +56,14 @@ class NerfSimulator(gym.Env):
             self.true_states = np.vstack((self.true_states, true_state))
             true_pose = torch.from_numpy(true_pose)
             true_pose = true_pose.to(device)
+
+            # linear interpolation on states
+            x = np.arange(self.true_states.shape[0])
+            xnew = np.linspace(x.min(), x.max(), self.true_states.shape[0] * num_interpolated_points)
+            true_states_interpolated = np.empty((xnew.shape[0], self.true_states.shape[1]))
+            for i in range(self.true_states.shape[1]):
+                true_states_interpolated[:, i] = np.interp(xnew, x, self.true_states[:, i])
+
 
             with torch.no_grad():
                 print(f"Calling nerf render with pose {true_pose}")
