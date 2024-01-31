@@ -22,12 +22,12 @@
     "blend_file": "stonehenge.blend"
   },
   "planner_cfg": {
-    "start_pos": [0.39, -0.67, 0.2],
-    "end_pos": [-0.4, 0.55, 0.16],
+    "start_pos": [0.35, -0.52, 0.2],
+    "end_pos": [-0.2, -0.41, 0.25],
     "start_R": [0.0, 0.0, 0.0],
     "end_R": [0.0, 0.0, 0.0],
     "T_final": 2.0,
-    "steps": 20,
+    "steps": 11,
     "planner_lr": 0.001,
     "epochs_init": 2500,
     "fade_out_epoch": 0,
