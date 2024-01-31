@@ -16,14 +16,6 @@ class MonteCarlo(object):
         # self.steps = 1
         self.collision_grid = collision_grid
 
-    # take in a state vector and output the grid coordinate
-    # taken from nav/quad_plot.py
-    def stateToGridCoord(self, state):
-        grid_size = 100//5 # side//kernel_size
-        state_float = grid_size*(state[:3] + 1) / 2
-        state_coord = tuple(int(state_float[i]) for i in range(3))
-        return state_coord
-
     def validate(self):
         for i in range(self.n_simulations):
             self.simulator.reset()
@@ -32,15 +24,18 @@ class MonteCarlo(object):
                 
                 noise = torch.normal(self.noise_mean, self.noise_std)
                 print(f"Step {j} with noise: {noise}")
-                self.simulator.step(noise)
+                isCollision, collisionCoords = self.simulator.step(noise, self.collision_grid)
+                if isCollision:
+                    self.collisions[noise] = collisionCoords
+
                 #TODO: move collision code to NerfSimulator.py 
-                current_state = self.simulator.current_state
-                current_state_gridCoord = self.stateToGridCoord(current_state)
-                collided = self.collision_grid[current_state_gridCoord]
-                self.collisions[noise] = collided
-                if collided:
-                    print(f"Drone collided in state {current_state}")
-                    break
-                else:
-                    print(f"Drone did NOT collide in state {current_state}")
+                # current_state = self.simulator.current_state
+                # current_state_gridCoord = self.stateToGridCoord(current_state)
+                # collided = self.collision_grid[current_state_gridCoord]
+                # self.collisions[noise] = collided
+                # if collided:
+                #     print(f"Drone collided in state {current_state}")
+                #     break
+                # else:
+                #     print(f"Drone did NOT collide in state {current_state}")
 

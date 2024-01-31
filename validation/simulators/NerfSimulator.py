@@ -7,6 +7,7 @@ from gym.spaces import Box
 import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
+from validation.utils.blenderUtils import stateToGridCoord
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -34,8 +35,7 @@ class NerfSimulator(gym.Env):
         self.steps = 0
         self.iter = 0
 
-
-    def step(self, disturbance, num_interpolated_points=10):
+    def step(self, disturbance, collision_grid, num_interpolated_points=10):
         """
         Run one timestep of the environment's dynamics.
         Returns:
@@ -63,7 +63,16 @@ class NerfSimulator(gym.Env):
             true_states_interpolated = np.empty((xnew.shape[0], self.true_states.shape[1]))
             for i in range(self.true_states.shape[1]):
                 true_states_interpolated[:, i] = np.interp(xnew, x, self.true_states[:, i])
-
+            
+            # check for collisions
+            for current_state in true_states_interpolated[-num_interpolated_points:]:
+                current_state_gridCoord = stateToGridCoord(current_state)
+                collided = collision_grid[current_state_gridCoord]
+                if collided:
+                    print(f"Drone collided in state {current_state}")
+                    return True, collided
+                else:
+                    print(f"Drone did NOT collide in state {current_state}")
 
             with torch.no_grad():
                 print(f"Calling nerf render with pose {true_pose}")
@@ -96,7 +105,7 @@ class NerfSimulator(gym.Env):
                 self.traj.learn_update(self.iter)
 
             self.iter += 1
-            return
+            return False, None
         except KeyboardInterrupt:
             return
 
