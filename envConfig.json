@@ -4,7 +4,7 @@
     "kernel_size": 5,
     "batch_size": 1024,
     "lrate": 1e-3,
-    "N_iter": 300,
+    "N_iter": 100,
     "render_viz": true,
     "show_rate": [20, 100]
   },
