@@ -36,7 +36,7 @@
   },
   "mpc_cfg": {
     "mpc_noise_mean": [0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "mpc_noise_std": [2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2, 2e-2, 2e-2, 2e-2, 1e-2, 1e-2, 1e-2]
+    "mpc_noise_std": [2e-1, 2e-1, 2e-1, 1e-1, 1e-1, 1e-1, 2e-1, 2e-1, 2e-1, 1e-1, 1e-1, 1e-1]
   },
   "camera_cfg": {
     "half_res": false,

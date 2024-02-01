@@ -70,7 +70,7 @@ class NerfSimulator(gym.Env):
                 collided = collision_grid[current_state_gridCoord]
                 if collided:
                     print(f"Drone collided in state {current_state}")
-                    return True, collided
+                    return True, True
                 else:
                     print(f"Drone did NOT collide in state {current_state}")
 
@@ -105,7 +105,7 @@ class NerfSimulator(gym.Env):
                 self.traj.learn_update(self.iter)
 
             self.iter += 1
-            return False, None
+            return False, False
         except KeyboardInterrupt:
             return
 

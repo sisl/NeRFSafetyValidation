@@ -26,10 +26,10 @@ def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
 
     # 20, 20, 20
     occupied = maxpool(output[None, None,...])[0, 0, ...] > 0.3
-    print(occupied.shape)
-    print(occupied)
+    #print(occupied.shape)
+    #print(occupied)
     # call simulation
-    n_simulations = 1
+    n_simulations = 3
     
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
