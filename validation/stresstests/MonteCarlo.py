@@ -2,13 +2,15 @@ from tqdm import trange
 import torch
 import csv
 
+from validation.utils.blenderUtils import runBlenderOnFailure
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class MonteCarlo(object):
 
     collisions = 0
 
-    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, collision_grid):
+    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, collision_grid, blend_file, workspace):
         self.simulator = simulator
         self.n_simulations = n_simulations
         self.noise_mean = noise_mean
@@ -16,6 +18,8 @@ class MonteCarlo(object):
         # self.steps = steps
         self.steps = 2
         self.collision_grid = collision_grid
+        self.blend_file = blend_file
+        self.workspace = workspace
 
     def validate(self):
         for i in range(self.n_simulations):
@@ -37,6 +41,7 @@ class MonteCarlo(object):
      
                 if isCollision:
                     self.collisions += 1
+                    runBlenderOnFailure(self.blend_file, self.workspace, 0.02, j)
                     break
         print(f"\n\t{self.collisions} collisions in {self.n_simulations} simulations, for a crash % of {100 * self.collisions/self.n_simulations}%\n")
 

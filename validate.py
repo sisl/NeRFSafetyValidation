@@ -33,7 +33,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
     
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
-        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, occupied)
+        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, occupied, blend_file, opt.workspace)
         mc.validate()
     else:
         print(f"Unrecognized stress test {stresstest}")
