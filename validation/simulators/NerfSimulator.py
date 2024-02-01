@@ -138,8 +138,8 @@ class NerfSimulator(gym.Env):
         basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
         if basefolder.exists():
             print(basefolder, "already exists!")
-            if input("Clear it before continuing? [y/N]:").lower() == "y":
-                shutil.rmtree(basefolder)
+            shutil.rmtree(basefolder)
+            print(basefolder, "has been cleared.")
         basefolder.mkdir()
         (basefolder / "init_poses").mkdir()
         (basefolder / "init_costs").mkdir()
