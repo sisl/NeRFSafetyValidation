@@ -24,9 +24,8 @@ class MonteCarlo(object):
                 
                 noise = torch.normal(self.noise_mean, self.noise_std)
                 print(f"Step {j} with noise: {noise}")
-                isCollision, collisionCoords = self.simulator.step(noise, self.collision_grid)
-                if isCollision:
-                    self.collisions[noise] = collisionCoords
+                isCollision, collisionVal = self.simulator.step(noise, self.collision_grid)
+                self.collisions[noise] = collisionVal
 
                 #TODO: move collision code to NerfSimulator.py 
                 # current_state = self.simulator.current_state
