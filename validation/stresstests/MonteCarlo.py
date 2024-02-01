@@ -41,7 +41,7 @@ class MonteCarlo(object):
      
                 if isCollision:
                     self.collisions += 1
-                    runBlenderOnFailure(self.blend_file, self.workspace, 0.02, j)
+                    runBlenderOnFailure(self.blend_file, self.workspace, j)
                     break
         print(f"\n\t{self.collisions} collisions in {self.n_simulations} simulations, for a crash % of {100 * self.collisions/self.n_simulations}%\n")
 
