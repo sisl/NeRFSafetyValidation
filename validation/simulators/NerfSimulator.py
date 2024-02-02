@@ -84,6 +84,15 @@ class NerfSimulator(gym.Env):
             true_pose = true_pose.cpu().detach().numpy()
             state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
 
+            #state estimate is 12-vector. Transform to 18-vector
+            state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
+
+            # Let the planner know where the agent is estimated to be
+            self.traj.update_state(state_est)
+
+            # Replan from the state estimate
+            self.traj.learn_update(self.iter)
+
             # check for collisions
             for current_state in true_states_interpolated[-num_interpolated_points:]:
                 try:
@@ -98,16 +107,6 @@ class NerfSimulator(gym.Env):
                     return True, True
                 else:
                     print(f"Drone did NOT collide in state {current_state}")
-
-            if self.iter < self.steps - 5:
-                #state estimate is 12-vector. Transform to 18-vector
-                state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
-
-                # Let the planner know where the agent is estimated to be
-                self.traj.update_state(state_est)
-
-                # Replan from the state estimate
-                self.traj.learn_update(self.iter)
 
             self.iter += 1
             return False, False

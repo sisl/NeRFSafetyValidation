@@ -7,9 +7,9 @@ def stateToGridCoord(state):
     state_coord = tuple(int(state_float[i]) for i in range(3))
     return state_coord
 
-def runBlenderOnFailure(blend_file, workspace, step):
+def runBlenderOnFailure(blend_file, workspace, n_sim, step):
     bevel_depth = 0.02      # Size of the curve visualized in blender
-    subprocess.run(['blender', blend_file, '-P', 'validation/utils/viz_failures_blend.py', '--background', '--', workspace, str(bevel_depth), str(step)])
+    subprocess.run(['blender', blend_file, '-P', 'validation/utils/viz_failures_blend.py', '--background', '--', workspace, str(bevel_depth), str(n_sim), str(step)])
 
 # You can call the function like this:
 # run_blender_on_failure(blend_file, opt.workspace, bevel_depth)

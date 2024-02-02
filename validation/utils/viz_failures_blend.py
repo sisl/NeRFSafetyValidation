@@ -18,7 +18,8 @@ if __name__ == "__main__":
 
     exp_name = argv[0]
     bevel_depth = argv[1]
-    step = argv[2]
+    n_sim = argv[2]
+    step = argv[3]
 
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
     blend_file_name = os.path.splitext(blend_file_name)[0]
-    blend_file_path =  f"{blend_file_name}_failure_{step}.blend"
+    blend_file_path =  f"{blend_file_name}_failure_{n_sim}_{step}.blend"
     failure_dir = os.path.join("./results/", blend_file_name, "failures")
     os.makedirs(failure_dir, exist_ok=True)  # create the directory if it doesn't exist
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(failure_dir, blend_file_path))
