@@ -66,8 +66,13 @@ class NerfSimulator(gym.Env):
             
             # check for collisions
             for current_state in true_states_interpolated[-num_interpolated_points:]:
-                current_state_gridCoord = stateToGridCoord(current_state)
-                collided = collision_grid[current_state_gridCoord]
+                try:
+                    current_state_gridCoord = stateToGridCoord(current_state)
+                    collided = collision_grid[current_state_gridCoord]
+                except IndexError:
+                    print(f"We are out of bounds with current state {current_state}")
+                    collided = False
+
                 if collided:
                     print(f"Drone collided in state {current_state}")
                     return True, True
