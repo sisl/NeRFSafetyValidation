@@ -64,16 +64,6 @@ class NerfSimulator(gym.Env):
             for i in range(self.true_states.shape[1]):
                 true_states_interpolated[:, i] = np.interp(xnew, x, self.true_states[:, i])
             
-            # check for collisions
-            for current_state in true_states_interpolated[-num_interpolated_points:]:
-                current_state_gridCoord = stateToGridCoord(current_state)
-                collided = collision_grid[current_state_gridCoord]
-                if collided:
-                    print(f"Drone collided in state {current_state}")
-                    return True, True
-                else:
-                    print(f"Drone did NOT collide in state {current_state}")
-
             with torch.no_grad():
                 print(f"Calling nerf render with pose {true_pose}")
                 nerf_image = self.filter.render_from_pose(true_pose)
@@ -93,6 +83,16 @@ class NerfSimulator(gym.Env):
             # is here only to benchmark performance. 
             true_pose = true_pose.cpu().detach().numpy()
             state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
+
+            # check for collisions
+            for current_state in true_states_interpolated[-num_interpolated_points:]:
+                current_state_gridCoord = stateToGridCoord(current_state)
+                collided = collision_grid[current_state_gridCoord]
+                if collided:
+                    print(f"Drone collided in state {current_state}")
+                    return True, True
+                else:
+                    print(f"Drone did NOT collide in state {current_state}")
 
             if self.iter < self.steps - 5:
                 #state estimate is 12-vector. Transform to 18-vector
