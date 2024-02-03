@@ -29,7 +29,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
     #print(occupied.shape)
     #print(occupied)
     # call simulation
-    n_simulations = 3
+    n_simulations = 100
     
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")

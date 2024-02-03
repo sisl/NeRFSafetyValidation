@@ -9,14 +9,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class MonteCarlo(object):
 
     collisions = 0
+    stepsToCollision = 0
 
     def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, collision_grid, blend_file, workspace):
         self.simulator = simulator
         self.n_simulations = n_simulations
         self.noise_mean = noise_mean
         self.noise_std = noise_std
-        # self.steps = steps
-        self.steps = 2
+        self.steps = steps
+        # self.steps = 2
         self.collision_grid = collision_grid
         self.blend_file = blend_file
         self.workspace = workspace
@@ -41,7 +42,8 @@ class MonteCarlo(object):
      
                 if isCollision:
                     self.collisions += 1
+                    self.stepsToCollision += j
                     runBlenderOnFailure(self.blend_file, self.workspace, i, j)
                     break
         print(f"\n\t{self.collisions} collisions in {self.n_simulations} simulations, for a crash % of {100 * self.collisions/self.n_simulations}%\n")
-
+        print(f"\tAverage step at collision: {self.stepsToCollision / self.collisions}\n")

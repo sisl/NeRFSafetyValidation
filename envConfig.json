@@ -29,14 +29,14 @@
     "T_final": 2.0,
     "steps": 8,
     "planner_lr": 0.001,
-    "epochs_init": 2500,
+    "epochs_init": 1000,
     "fade_out_epoch": 0,
     "fade_out_sharpness": 10,
     "epochs_update": 250
   },
   "mpc_cfg": {
     "mpc_noise_mean": [0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    "mpc_noise_std": [2e-1, 2e-1, 2e-1, 1e-1, 1e-1, 1e-1, 2e-1, 2e-1, 2e-1, 1e-1, 1e-1, 1e-1]
+    "mpc_noise_std": [1e-1, 1e-1, 1e-1, 5e-2, 5e-2, 5e-2, 1e-1, 1e-1, 1e-1, 5e-2, 5e-2, 5e-2]
   },
   "camera_cfg": {
     "half_res": false,
