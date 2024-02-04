@@ -156,7 +156,7 @@ class NerfSimulator(gym.Env):
         print("created", basefolder)
         self.basefolder = basefolder
 
-        sim_img_cache = self.agent_cfg["path"]
+        sim_img_cache = pathlib.Path(self.agent_cfg["path"])
         if sim_img_cache.exists():
             print(sim_img_cache, "already exists!")
             shutil.rmtree(sim_img_cache)
