@@ -123,7 +123,7 @@ class NerfSimulator(gym.Env):
             observation (object): the initial observation.
         """
         self.clear_workspace()
-        self.dynamics.iter = 0
+        self.dynamics.reset_iters()
 
         # Reinitialize Planner
         traj = Planner(self.start_state, self.end_state, self.planner_cfg, self.density_fn)

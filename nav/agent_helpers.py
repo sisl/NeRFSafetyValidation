@@ -189,3 +189,6 @@ class Agent():
         with open(filename,"w+") as f:
             json.dump(true_states, f)
         return
+    
+    def reset_iters(self):
+        self.iter = 0
