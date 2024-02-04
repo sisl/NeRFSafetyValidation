@@ -161,3 +161,5 @@ class NerfSimulator(gym.Env):
             print(sim_img_cache, "already exists!")
             shutil.rmtree(sim_img_cache)
             print(sim_img_cache, "has been cleared.")
+        sim_img_cache.mkdir()
+        print("created", sim_img_cache)
