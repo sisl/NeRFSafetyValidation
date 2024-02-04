@@ -27,7 +27,7 @@
     "start_R": [0.0, 0.0, 0.0],
     "end_R": [0.0, 0.0, 0.0],
     "T_final": 2.0,
-    "steps": 20,
+    "steps": 15,
     "planner_lr": 0.001,
     "epochs_init": 1000,
     "fade_out_epoch": 0,
