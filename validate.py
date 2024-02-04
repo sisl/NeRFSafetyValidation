@@ -230,13 +230,6 @@ if __name__ == "__main__":
     'nbins': body_nbins
     }
 
-    agent_cfg = {
-    'dt': T_final/steps,        # Duration of each time step
-    'mass': mass,
-    'g': g,
-    'I': torch.tensor(I).float().to(device)
-    }
-
     camera_cfg = envConfig["camera_cfg"]
     camera_cfg["path"] = path
 
