@@ -27,6 +27,7 @@ class NerfSimulator(gym.Env):
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
+        agent_cfg['dt'] = self.planner_cfg['T_final'] / self.planner_cfg['steps']
         true_start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
         self.true_states = true_start_state.cpu().detach().numpy()
         self.current_state = None
