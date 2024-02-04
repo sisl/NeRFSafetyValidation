@@ -138,7 +138,7 @@ class NerfSimulator(gym.Env):
 
 
     def clear_workspace(self):
-        """Clears the workspace directory."""
+        """Clears the workspace directory and sim image cache"""
         basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
         if basefolder.exists():
             print(basefolder, "already exists!")
@@ -152,3 +152,9 @@ class NerfSimulator(gym.Env):
         (basefolder / "estimator_data").mkdir()
         print("created", basefolder)
         self.basefolder = basefolder
+
+        sim_img_cache = self.agent_cfg["path"]
+        if sim_img_cache.exists():
+            print(sim_img_cache, "already exists!")
+            shutil.rmtree(sim_img_cache)
+            print(sim_img_cache, "has been cleared.")
