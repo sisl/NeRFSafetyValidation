@@ -45,5 +45,6 @@ class MonteCarlo(object):
                     self.stepsToCollision += j
                     runBlenderOnFailure(self.blend_file, self.workspace, i, j)
                     break
-        print(f"\n\t{self.collisions} collisions in {self.n_simulations} simulations, for a crash % of {100 * self.collisions/self.n_simulations}%\n")
-        print(f"\tAverage step at collision: {self.stepsToCollision / self.collisions}\n")
+        if len(self.collisions) > 0:
+            print(f"\n\t{self.collisions} collisions in {self.n_simulations} simulations, for a crash % of {100 * self.collisions/self.n_simulations}%\n")
+            print(f"\tAverage step at collision: {self.stepsToCollision / self.collisions}\n")
