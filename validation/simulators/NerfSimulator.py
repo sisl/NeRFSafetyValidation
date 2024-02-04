@@ -20,6 +20,7 @@ class NerfSimulator(gym.Env):
         self.action_space = None # TODO: Define disturbance vector here
         self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800) TODO: change this to the state vector
         self.planner_cfg = planner_cfg
+        self.agent_cfg = agent_cfg
         self.start_state = start_state
         self.end_state = end_state
         self.density_fn = density_fn
