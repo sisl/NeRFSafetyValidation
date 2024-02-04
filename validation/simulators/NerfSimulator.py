@@ -20,20 +20,26 @@ class NerfSimulator(gym.Env):
         self.action_space = None # TODO: Define disturbance vector here
         self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800) TODO: change this to the state vector
         self.planner_cfg = planner_cfg
-        self.agent_cfg = agent_cfg
         self.start_state = start_state
         self.end_state = end_state
         self.density_fn = density_fn
+        self.camera_cfg = camera_cfg
+        self.filter_cfg = filter_cfg
+        self.blender_cfg = blender_cfg
+        self.get_rays_fn = get_rays_fn
+        self.render_fn = render_fn
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
         agent_cfg['dt'] = self.planner_cfg['T_final'] / self.planner_cfg['steps']
         agent_cfg['I'] = torch.tensor(agent_cfg['I']).float().to(device)
+        self.agent_cfg = agent_cfg
         true_start_state = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
+        self.true_start_state = true_start_state
         self.true_states = true_start_state.cpu().detach().numpy()
         self.current_state = None
-        self.dynamics = Agent(agent_cfg, camera_cfg, blender_cfg)
-        self.filter = Estimator(filter_cfg, self.dynamics, true_start_state, get_rays_fn=get_rays_fn, render_fn=render_fn)
+        self.dynamics = None
+        self.filter = None
         self.traj = None
         self.steps = 0
         self.iter = 0
@@ -125,6 +131,12 @@ class NerfSimulator(gym.Env):
         self.clear_workspace()
         self.dynamics.reset_iters()
         self.iter = 0
+
+        # Reinitialize dynamics
+        self.dynamics = Agent(self.agent_cfg, self.camera_cfg, self.blender_cfg)
+
+        #Reinitialize estimator
+        self.filter = Estimator(self.filter_cfg, self.dynamics, self.true_start_state, get_rays_fn=self.get_rays_fn, render_fn=self.render_fn)
 
         # Reinitialize Planner
         traj = Planner(self.start_state, self.end_state, self.planner_cfg, self.density_fn)
