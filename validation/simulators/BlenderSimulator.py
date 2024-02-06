@@ -7,6 +7,7 @@ from gym.spaces import Box
 import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
+from validation.utils.blenderUtils import stateToGridCoord
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
