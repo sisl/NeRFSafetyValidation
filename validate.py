@@ -7,6 +7,7 @@ from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
 from validation.simulators.NerfSimulator import NerfSimulator
+from validation.simulators.BlenderSimulator import BlenderSimulator
 from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
@@ -247,6 +248,8 @@ if __name__ == "__main__":
     'mpc_noise_mean': torch.tensor(mpc_noise_mean)
     }
 
+    simulator_cfg = envConfig["simulator"]
+
     ### NeRF Configs ###
     # Querying the density (for the planner)
     #In NeRF training, the camera is pointed along positive z axis, whereas Blender assumes -z, hence we need to rotate the pose
@@ -258,7 +261,13 @@ if __name__ == "__main__":
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
 
-    simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    if simulator_cfg == "NerfSimulator":
+        simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    elif simulator_cfg == "BlenderSimulator":
+        simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    else:
+        print(f"Unrecognized simulator {simulator_cfg}")
+        exit()
   
     # TODO: configure disturbances
     noise_std = extra_cfg['mpc_noise_std']
