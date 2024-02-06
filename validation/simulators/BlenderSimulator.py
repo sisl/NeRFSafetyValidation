@@ -43,7 +43,7 @@ class BlenderSimulator(gym.Env):
         self.steps = 0
         self.iter = 0
 
-    def step(self, disturbance):
+    def step(self, disturbance, collision_grid, num_interpolated_points=10):
         """
         Run one timestep of the environment's dynamics.
         Returns:
@@ -54,20 +54,43 @@ class BlenderSimulator(gym.Env):
         """
         try:
             # In MPC style, take the next action recommended from the planner
-            if self.iter < self.steps - 5:
-                action = self.traj.get_next_action().clone().detach()
-            else:
-                action = self.traj.get_actions()[self.iter - self.steps + 5, :]
+            action = self.traj.get_next_action().clone().detach()
 
             # Have the agent perform the recommended action, subject to noise. true_pose, true_state are here
             # for simulation purposes in order to benchmark performance. They are the true state of the agent
             # subjected to noise. gt_img is the observation.
             true_pose, true_state, gt_img = self.dynamics.step(action, noise=disturbance)
+            self.current_state = true_state
             self.true_states = np.vstack((self.true_states, true_state))
+            true_pose = torch.from_numpy(true_pose)
+            true_pose = true_pose.to(device)
+
+            # linear interpolation on states
+            x = np.arange(self.true_states.shape[0])
+            xnew = np.linspace(x.min(), x.max(), self.true_states.shape[0] * num_interpolated_points)
+            true_states_interpolated = np.empty((xnew.shape[0], self.true_states.shape[1]))
+            for i in range(self.true_states.shape[1]):
+                true_states_interpolated[:, i] = np.interp(xnew, x, self.true_states[:, i])
+            
+            with torch.no_grad():
+                print(f"Calling nerf render with pose {true_pose}")
+                nerf_image = self.filter.render_from_pose(true_pose)
+                nerf_image = torch.squeeze(nerf_image).cpu().detach().numpy()
+                nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
+                nerf_image_reshaped *= 255
+                nerf_image_reshaped = nerf_image_reshaped.astype(np.uint8)
+            # convert to torch object
+            
+            print("saving image files")
+            gt_img_tuple = gt_img.cpu().detach().numpy()
+            matplotlib.image.imsave("./sim_img_cache/blenderRender.png", gt_img_tuple)
+            
+            matplotlib.image.imsave("./sim_img_cache/NeRFRender.png", nerf_image_reshaped)
 
             # Given the planner's recommended action and the observation, perform state estimation. true_pose
             # is here only to benchmark performance. 
-            state_est = self.filter.estimate_state(gt_img, true_pose, action)
+            true_pose = true_pose.cpu().detach().numpy()
+            state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
 
             #state estimate is 12-vector. Transform to 18-vector
             state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
@@ -78,8 +101,23 @@ class BlenderSimulator(gym.Env):
             # Replan from the state estimate
             self.traj.learn_update(self.iter)
 
+            # check for collisions
+            for current_state in true_states_interpolated[-num_interpolated_points:]:
+                try:
+                    current_state_gridCoord = stateToGridCoord(current_state)
+                    collided = collision_grid[current_state_gridCoord]
+                except IndexError:
+                    print(f"We are out of bounds with current state {current_state}")
+                    collided = False
+
+                if collided:
+                    print(f"Drone collided in state {current_state}")
+                    return True, True
+                else:
+                    print(f"Drone did NOT collide in state {current_state}")
+
             self.iter += 1
-            return
+            return False, False
         except KeyboardInterrupt:
             return
 
