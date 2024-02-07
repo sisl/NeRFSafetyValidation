@@ -1,3 +1,4 @@
+import os
 import pathlib
 import shutil
 import gym
@@ -8,6 +9,7 @@ import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from validation.utils.blenderUtils import stateToGridCoord
+from validation.utils.fileUtils import cache_poses, restore_poses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -128,6 +130,8 @@ class BlenderSimulator(gym.Env):
         Returns:
             observation (object): the initial observation.
         """
+        self.basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
+        cache_flag = os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json")
         self.clear_workspace()
         self.iter = 0
 
@@ -147,7 +151,17 @@ class BlenderSimulator(gym.Env):
 
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
-        traj.learn_init()
+        if not cache_flag:
+            traj.learn_init()
+            init_poses = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_poses"
+            init_costs = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_costs"
+            target = "cached" / pathlib.Path(self.planner_cfg['exp_name'])
+            cache_poses(init_poses, init_costs, target)
+        else:
+            cached_poses = "cached" / pathlib.Path(self.planner_cfg['exp_name']) / "poses"
+            cached_costs = "cached" / pathlib.Path(self.planner_cfg['exp_name']) / "costs"
+            target = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
+            restore_poses(cached_poses, cached_costs, target)
 
         self.traj = traj
         self.steps = traj.get_actions().shape[0]
@@ -155,16 +169,22 @@ class BlenderSimulator(gym.Env):
 
     def clear_workspace(self):
         """Clears the workspace directory."""
-        basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
-        if basefolder.exists():
-            print(basefolder, "already exists!")
-            shutil.rmtree(basefolder)
-            print(basefolder, "has been cleared.")
-        basefolder.mkdir()
-        (basefolder / "init_poses").mkdir()
-        (basefolder / "init_costs").mkdir()
-        (basefolder / "replan_poses").mkdir()
-        (basefolder / "replan_costs").mkdir()
-        (basefolder / "estimator_data").mkdir()
-        print("created", basefolder)
-        self.basefolder = basefolder
+        if self.basefolder.exists():
+            print(self.basefolder, "already exists!")
+            shutil.rmtree(self.basefolder)
+            print(self.basefolder, "has been cleared.")
+        self.basefolder.mkdir()
+        (self.basefolder / "init_poses").mkdir()
+        (self.basefolder / "init_costs").mkdir()
+        (self.basefolder / "replan_poses").mkdir()
+        (self.basefolder / "replan_costs").mkdir()
+        (self.basefolder / "estimator_data").mkdir()
+        print("created", self.basefolder)
+
+        sim_img_cache = pathlib.Path(self.agent_cfg["path"])
+        if sim_img_cache.exists():
+            print(sim_img_cache, "already exists!")
+            shutil.rmtree(sim_img_cache)
+            print(sim_img_cache, "has been cleared.")
+        sim_img_cache.mkdir()
+        print("created", sim_img_cache)
