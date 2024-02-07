@@ -130,6 +130,7 @@ class NerfSimulator(gym.Env):
         Returns:
             observation (object): the initial observation.
         """
+        cache_flag = os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json")
         self.clear_workspace()
         self.iter = 0
 
@@ -149,7 +150,7 @@ class NerfSimulator(gym.Env):
 
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
-        if not os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json"):
+        if not cache_flag:
             traj.learn_init()
             init_poses = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_poses"
             init_costs = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_costs"
