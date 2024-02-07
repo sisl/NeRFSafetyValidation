@@ -145,22 +145,21 @@ class NerfSimulator(gym.Env):
         self.filter.basefolder = self.basefolder
 
         # Create a coarse trajectory to initialize the planner by using A*. 
-        traj.a_star_init()
+        if not os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json"):
+            traj.a_star_init()
+            init_poses = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_poses"
+            init_costs = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_costs"
+            target = "cached" / pathlib.Path(self.planner_cfg['exp_name'])
+            cache_poses(init_poses, init_costs, target)
+        else:
+            cached_poses = "cached" / pathlib.Path(self.planner_cfg['exp_name']) / "poses"
+            cached_costs = "cached" / pathlib.Path(self.planner_cfg['exp_name']) / "costs"
+            target = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
+            restore_poses(cached_poses, cached_costs, target)
 
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
-        if not os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json"):
-            traj.learn_init()
-            init_poses = "paths" / pathlib.Path(self.workspace) / "init_poses"
-            init_costs = "paths" / pathlib.Path(self.workspace) / "init_costs"
-            target = "cached" / pathlib.Path(self.workspace)
-            cache_poses(init_poses, init_costs, target)
-        else:
-            cached_poses = "cached" / pathlib.Path(self.workspace) / "poses"
-            cached_costs = "cached" / pathlib.Path(self.workspace) / "costs"
-            target = "paths" / pathlib.Path(self.workspace)
-            restore_poses(cached_poses, cached_costs, target)
-        
+        traj.learn_init()
 
         self.traj = traj
         self.steps = traj.get_actions().shape[0]
