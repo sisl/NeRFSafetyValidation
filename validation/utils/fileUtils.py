@@ -13,11 +13,14 @@ def cache_poses(pose_file_path, cost_file_path, destination_dir):
     cost_dir = os.path.join(cached_dir, 'costs')
     os.makedirs(pose_dir, exist_ok=True)
     os.makedirs(cost_dir, exist_ok=True)
+
+    pose_files = os.listdir(pose_file_path)
+    cost_files = os.listdir(cost_file_path)
     
     # Copy the files
-    for file in pose_file_path:
+    for file in pose_files:
         shutil.copy(pose_file_path, file)
-    for file in cost_file_path:
+    for file in cost_files:
         shutil.copy(cost_file_path, file)
     print("Caching posts & costs!")
 
