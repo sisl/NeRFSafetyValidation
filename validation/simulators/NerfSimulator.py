@@ -1,3 +1,4 @@
+import os
 import pathlib
 import shutil
 import gym
@@ -8,6 +9,7 @@ import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from validation.utils.blenderUtils import stateToGridCoord
+from validation.utils.fileUtils import cache_poses, restore_poses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -147,7 +149,18 @@ class NerfSimulator(gym.Env):
 
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
-        traj.learn_init()
+        if not os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json"):
+            traj.learn_init()
+            init_poses = "paths" / pathlib.Path(self.workspace) / "init_poses"
+            init_costs = "paths" / pathlib.Path(self.workspace) / "init_costs"
+            target = "cached" / pathlib.Path(self.workspace)
+            cache_poses(init_poses, init_costs, target)
+        else:
+            cached_poses = "cached" / pathlib.Path(self.workspace) / "poses"
+            cached_costs = "cached" / pathlib.Path(self.workspace) / "costs"
+            target = "paths" / pathlib.Path(self.workspace)
+            restore_poses(cached_poses, cached_costs, target)
+        
 
         self.traj = traj
         self.steps = traj.get_actions().shape[0]

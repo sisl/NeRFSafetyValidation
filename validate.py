@@ -2,7 +2,6 @@ import subprocess
 import numpy as np
 import torch
 import argparse
-from tqdm import trange
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
