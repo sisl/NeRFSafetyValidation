@@ -15,8 +15,10 @@ def cache_poses(pose_file_path, cost_file_path, destination_dir):
     os.makedirs(cost_dir, exist_ok=True)
     
     # Copy the files
-    shutil.copy(pose_file_path, pose_dir)
-    shutil.copy(cost_file_path, cost_dir)
+    for file in pose_file_path:
+        shutil.copy(pose_file_path, file)
+    for file in cost_file_path:
+        shutil.copy(cost_file_path, file)
     print("Caching posts & costs!")
 
 def restore_poses(cached_pose_dir, cached_cost_dir, destination_dir):
