@@ -17,15 +17,16 @@ def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
     
     # set up collision grid
     # taken from nav/quad_plot.py a_star_init
-    side = 100
-    linspace = torch.linspace(-1, 1, side)
-    coods = torch.stack(torch.meshgrid(linspace, linspace, linspace), dim=-1)
-    kernel_size = 5
-    output = density_fn(coods)
-    maxpool = torch.nn.MaxPool3d(kernel_size = kernel_size)
+    # commented out because we have a signed distance field now
+    # side = 100
+    # linspace = torch.linspace(-1, 1, side)
+    # coods = torch.stack(torch.meshgrid(linspace, linspace, linspace), dim=-1)
+    # kernel_size = 5
+    # output = density_fn(coods)
+    # maxpool = torch.nn.MaxPool3d(kernel_size = kernel_size)
 
     # 20, 20, 20
-    occupied = maxpool(output[None, None,...])[0, 0, ...] > 0.3
+    # occupied = maxpool(output[None, None,...])[0, 0, ...] > 0.3
     #print(occupied.shape)
     #print(occupied)
     # call simulation
@@ -33,7 +34,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
     
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
-        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, occupied, blend_file, opt.workspace)
+        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace)
         mc.validate()
     else:
         print(f"Unrecognized stress test {stresstest}")

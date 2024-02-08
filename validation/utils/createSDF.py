@@ -4,6 +4,8 @@ import numpy as np
 import scipy.ndimage
 import matplotlib.pyplot as plt
 
+GRANULARITY = 40 # how many points to sample per world meter
+
 # import the collision map from collision_map.npy
 collision_map = np.load("collision_map.npy")
 
@@ -22,7 +24,9 @@ sdf = scipy.ndimage.distance_transform_edt(collision_map)
 # plt.show()
 
 # multiply the signed distance field by the resolution to get the distance in meters
-sdf /= 20 # 20 is the resolution of the collision map. This is the same as the GRANULARITY in createCollisionMap.py
+sdf /= GRANULARITY # 40 is the resolution of the collision map. This is the same as the GRANULARITY in createCollisionMap.py
+
+print(sdf)
 
 # save the signed distance field to a file
 np.save("sdf.npy", sdf)

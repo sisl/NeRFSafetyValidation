@@ -2,6 +2,7 @@ import bmesh
 import bpy
 import numpy as np
 
+
 D = bpy.data
 C = bpy.context
 
@@ -16,7 +17,10 @@ COLLISION_MESHES = [
     D.objects["Mesh_7"],
 ]
 
-GRANULARITY = 20 # how many points to sample per meter
+GRANULARITY = 40 # how many points to sample per world meter. 
+# 1 meter in the grid world is approximately 20 meters in the real world
+# 1 grid cell at granularity 40 approximates to 1/2 a meter in the real world
+# this means our drone is approximately 50 cm wide and 50 cm long (and 50 cm tall)
 
 # define the range of the collision map in world coordinates. We got these from looking at the scene in Blender
 START_X = -1.4

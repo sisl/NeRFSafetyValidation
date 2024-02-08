@@ -10,6 +10,7 @@ import matplotlib.image
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from validation.utils.blenderUtils import stateToGridCoord
 from validation.utils.fileUtils import cache_poses, restore_poses
+from validation.utils.createCollisionMap import worldToIndex, indexToWorld, GRANULARITY
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -46,7 +47,18 @@ class NerfSimulator(gym.Env):
         self.steps = 0
         self.iter = 0
 
-    def step(self, disturbance, collision_grid, num_interpolated_points=10):
+        # collision grid parameters
+        self.GRANULARITY = GRANULARITY
+        self.START_X = -1.4
+        self.END_x = 1
+        self.START_Y = -1.3
+        self.END_Y = 1
+        self.START_Z = -0.1
+        self.END_Z = 0.5
+        self.sdf = np.load("validation/utils/sdf.npy")
+
+
+    def step(self, disturbance, num_interpolated_points=10):
         """
         Run one timestep of the environment's dynamics.
         Returns:
@@ -102,13 +114,15 @@ class NerfSimulator(gym.Env):
             self.traj.update_state(state_est)
 
             # Replan from the state estimate
-            self.traj.learn_update(self.iter)
+            self.traj.learn_update(self.iter)            
 
             # check for collisions
             for current_state in true_states_interpolated[-num_interpolated_points:]:
                 try:
-                    current_state_gridCoord = stateToGridCoord(current_state)
-                    collided = collision_grid[current_state_gridCoord]
+                    x = worldToIndex(current_state[0], self.START_X, self.GRANULARITY)
+                    y = worldToIndex(current_state[1], self.START_Y, self.GRANULARITY)
+                    z = worldToIndex(current_state[2], self.START_Z, self.GRANULARITY)
+                    collided = self.sdf[x, y, z] < (1 / self.GRANULARITY) # if we are within 1 grid cell of the surface, we have collided
                 except IndexError:
                     print(f"We are out of bounds with current state {current_state}")
                     collided = False
