@@ -46,7 +46,7 @@ class BlenderSimulator(gym.Env):
         self.steps = 0
         self.iter = 0
 
-    def step(self, disturbance, collision_grid, num_interpolated_points=10):
+    def step(self, disturbance, collision_grid, num_interpolated_points=2):
         """
         Run one timestep of the environment's dynamics.
         Returns:

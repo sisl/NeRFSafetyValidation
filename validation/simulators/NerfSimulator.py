@@ -58,7 +58,7 @@ class NerfSimulator(gym.Env):
         self.sdf = np.load("validation/utils/sdf.npy")
 
 
-    def step(self, disturbance, num_interpolated_points=10):
+    def step(self, disturbance, num_interpolated_points=2):
         """
         Run one timestep of the environment's dynamics.
         Returns:
