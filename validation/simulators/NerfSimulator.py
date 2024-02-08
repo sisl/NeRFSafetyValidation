@@ -10,7 +10,7 @@ import matplotlib.image
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from validation.utils.blenderUtils import stateToGridCoord
 from validation.utils.fileUtils import cache_poses, restore_poses
-from validation.utils.createCollisionMap import worldToIndex, indexToWorld, GRANULARITY
+from validation.utils.blenderUtils import worldToIndex, indexToWorld
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -48,7 +48,7 @@ class NerfSimulator(gym.Env):
         self.iter = 0
 
         # collision grid parameters
-        self.GRANULARITY = GRANULARITY
+        self.GRANULARITY = 40
         self.START_X = -1.4
         self.END_x = 1
         self.START_Y = -1.3
