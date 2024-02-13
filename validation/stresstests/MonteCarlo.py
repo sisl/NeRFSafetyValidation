@@ -17,8 +17,8 @@ class MonteCarlo(object):
         self.n_simulations = n_simulations
         self.noise_mean = noise_mean
         self.noise_std = noise_std
-        self.noise_mean_cpu = noise_mean.cpu().numpy() # change this
-        self.noise_std_cpu = noise_std.cpu().numpy() # change this
+        self.noise_mean_cpu = noise_mean.cpu().numpy() # change this, local cpu version that plays nice with norm.pdf. Perhaps a torch native pdf would be faster
+        self.noise_std_cpu = noise_std.cpu().numpy() # change this, see above
         self.steps = steps
         # self.steps = 2
         self.blend_file = blend_file
@@ -56,13 +56,15 @@ class MonteCarlo(object):
                 outputStepList.append(collisionVal)
                 outputStepList.extend(currentPos)
 
-                # find and append the trajectory likelihood
-                simTrajLogLikelihood += self.trajectoryLikelihood(noiseList)
+                # find and append the trajectory likelihood, both for this step and the entire trajectory
+                curLogLikelihood = self.trajectoryLikelihood(noiseList)
+                outputStepList.append(curLogLikelihood)
+
+                simTrajLogLikelihood += curLogLikelihood
                 outputStepList.append(simTrajLogLikelihood)
                 
                 # output the collision value
-                outputStepList.append(collisionVal)
-                outputStepList.append(isCollided)
+                outputStepList.append(isCollision)
                 
                 # append the value of the step to the simulation data
                 outputSimulationList.append(outputStepList)
@@ -73,7 +75,21 @@ class MonteCarlo(object):
                     everCollided = True
                     runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
                     break
+           
+            '''
+
+            Simulation data indexing:
+            0: Simulation #
+            1: Step #
+            2-13: Noise data (12D)
+            14: SDF value at position
+            15-17: XYZ Coordinates
+            18: step trajectory likelihood
+            19: cumulative trajectory likelihood
+            20: did we collide on this step
+            21: did we collide on this simulation (added post facto)
             
+            '''
             with open("./results/collisionValues.csv", "a") as csvFile:
                 print(f"Noise List: {noiseList}")
                 writer = csv.writer(csvFile)
