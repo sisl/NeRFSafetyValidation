@@ -13,25 +13,7 @@ import json
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
-def validate(simulator, stresstest, noise_mean, noise_std, density_fn):
-    
-    # set up collision grid
-    # taken from nav/quad_plot.py a_star_init
-    # commented out because we have a signed distance field now
-    # side = 100
-    # linspace = torch.linspace(-1, 1, side)
-    # coods = torch.stack(torch.meshgrid(linspace, linspace, linspace), dim=-1)
-    # kernel_size = 5
-    # output = density_fn(coods)
-    # maxpool = torch.nn.MaxPool3d(kernel_size = kernel_size)
-
-    # 20, 20, 20
-    # occupied = maxpool(output[None, None,...])[0, 0, ...] > 0.3
-    #print(occupied.shape)
-    #print(occupied)
-    # call simulation
-    n_simulations = 50
-    
+def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):    
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
         mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace)
@@ -249,6 +231,7 @@ if __name__ == "__main__":
     }
 
     simulator_cfg = envConfig["simulator"]
+    n_simulations = envConfig["n_simulations"]
 
     ### NeRF Configs ###
     # Querying the density (for the planner)
@@ -275,7 +258,7 @@ if __name__ == "__main__":
     # noise = torch.normal(noise_mean, noise_std)
     
     # Main loop
-    validate(simulator, "Monte Carlo", noise_mean, noise_std, density_fn)
+    validate(simulator, "Monte Carlo", noise_mean, noise_std, n_simulations)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
