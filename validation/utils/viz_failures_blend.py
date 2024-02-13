@@ -94,7 +94,7 @@ if __name__ == "__main__":
         time_step += 1
     
     # bounding box representing drone location at timestep of failure
-    last_location = replan_plan[0]
+    last_location = replan_plan[1]
     add_cube(project, last_location)
 
     # save the Blender file
