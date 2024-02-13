@@ -57,6 +57,7 @@ if __name__ == "__main__":
         obj = bpy.context.object
 
         obj.location = location
+        obj.name = 'Drone_bounding_box'
 
         project.objects.link(obj)
         bpy.context.view_layer.update()
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         time_step += 1
     
     # bounding box representing drone location at timestep of failure
-    last_location = replan_plan[-1]
+    last_location = replan_plan[0]
     add_cube(project, last_location)
 
     # save the Blender file
