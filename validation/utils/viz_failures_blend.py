@@ -52,6 +52,16 @@ if __name__ == "__main__":
         project.objects.link(obj)
         bpy.context.view_layer.update()
 
+    def add_cube(project, location, scale=(0.125, 0.125, 0.125)):
+        bpy.ops.mesh.primitive_cube_add(size=1, enter_editmode=False, align='WORLD', location=location, scale=scale)
+        obj = bpy.context.object
+
+        obj.location = location
+
+        project.objects.link(obj)
+        bpy.context.view_layer.update()
+
+
     def poses2loc(poses):
         return poses[:, :3, -1]
 
@@ -81,6 +91,10 @@ if __name__ == "__main__":
         replan_plan = poses2loc(replan_plan)
         add_curve(project, replan_plan, time_step=time_step, bevel_depth=0.02)
         time_step += 1
+    
+    # bounding box representing drone location at timestep of failure
+    last_location = replan_plan[-1]
+    add_cube(project, last_location)
 
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
