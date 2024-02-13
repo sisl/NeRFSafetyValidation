@@ -116,25 +116,31 @@ class NerfSimulator(gym.Env):
             # Replan from the state estimate
             self.traj.learn_update(self.iter)            
 
+            collisionVal = -1;
+
             # check for collisions
             for current_state in true_states_interpolated[-num_interpolated_points:]:
                 try:
                     x = worldToIndex(current_state[0], self.START_X, self.GRANULARITY)
                     y = worldToIndex(current_state[1], self.START_Y, self.GRANULARITY)
                     z = worldToIndex(current_state[2], self.START_Z, self.GRANULARITY)
-                    collided = self.sdf[x, y, z] < (1 / self.GRANULARITY) # if we are within 1 grid cell of the surface, we have collided
+                    
+                    collisionVal = self.sdf[x, y, z]
+                    collided = collisionVal < (1 / self.GRANULARITY) # if we are within 1 grid cell of the surface, we have collided
                 except IndexError:
                     print(f"We are out of bounds with current state {current_state}")
                     collided = False
 
                 if collided:
                     print(f"Drone collided in state {current_state}")
-                    return True, True
+                    return collided, collisionVal, current_state[:3]
                 else:
                     print(f"Drone did NOT collide in state {current_state}")
 
             self.iter += 1
-            return False, False
+
+            # return if it collided, the value at the collision (sdf), and the position during collision
+            return collided, collisionVal, current_state[:3]
         except KeyboardInterrupt:
             return
 
