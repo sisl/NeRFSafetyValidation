@@ -14,12 +14,14 @@ class CrossEntropyMethod:
             m_elite: number of elite samples per iteration
             kmax: number of iterations
         """
-        self.f = f
-        self.q = q
-        self.p = p
-        self.m = m
-        self.m_elite = m_elite
-        self.kmax = kmax
+        self.f = f # 10 x 1 (one score for each simulation)
+        self.q = q # 12 x 12 (12 step #s and 12 noise parameters)
+        self.p = p # same as above
+        self.m = m # 3?
+        self.m_elite = m_elite # 2?
+        self.kmax = kmax # 2?
+        self.mean = torch.zeros(12)
+        self.trajs = np.array((12, 10, 12))
 
     def optimize(self):
         """
@@ -37,26 +39,51 @@ class CrossEntropyMethod:
 
         for k in range(self.kmax):
             # sample and evaluate function on samples
-            samples = self.q.sample((self.m,))
-            scores = torch.tensor([self.f(s) for s in samples])
+            # samples = self.q.sample((self.m,))
+            noises = [] # 10 x 12 x 12 array (one noise for every simulation)
+            for simulationNumber in range(10):
+                # ONE SIMULATION BELOW
+                for i in range(12):  
+                    noise = torch.normal(self.mean, self.q[i])
+                    
+                    # do a simulation
+                    # step()
+
+
+                # store trajectory (for a simulation)
+
+                # calculate likelihood of the trajectory
+
+                # store the "risks" (take the min of the sdf values and store it in f)
+
+                # write results to CSV using the format in MonteCarlo.py
+
+
+            # scores = torch.tensor([self.f(s) for s in samples])
 
             # select elite samples and compute weights
             elite_samples = samples[scores.topk(min(self.m, self.m_elite)).indices]
-            weights = torch.exp(self.p.log_prob(elite_samples.squeeze()) -  self.q.log_prob(elite_samples.squeeze()))
-            weights = weights / weights.sum()
+            
+            # for loop start
+            for i in range(12):
+                weights = torch.exp(self.p[i].log_prob(elite_samples.squeeze()) -  self.q[i].log_prob(elite_samples.squeeze()))
+                weights = weights / weights.sum()
 
-            # update proposal distribution based on elite samples
-            mean = (elite_samples * weights.unsqueeze(1)).sum(dim=0)
-            cov = torch.cov(elite_samples.T, aweights=weights)
-            cov = cov + 1e-1*torch.eye(self.q.event_shape[0])
-            self.q = MultivariateNormal(mean, cov)
+                # update proposal distribution based on elite samples
+                mean = (elite_samples * weights.unsqueeze(1)).sum(dim=0)
+                cov = torch.cov(elite_samples.T, aweights=weights)
+                cov = cov + 1e-1*torch.eye(self.q[i].event_shape[0])
+                self.q[i] = MultivariateNormal(mean, cov)
 
-            # save elite samples and their scores
-            all_elite_samples[k] = elite_samples
-            all_elite_scores[k] = scores.topk(min(self.m, self.m_elite)).values
+                # save elite samples and their scores
+                all_elite_samples[k] = elite_samples
+                all_elite_scores[k] = scores.topk(min(self.m, self.m_elite)).values
+
+
+            # for loop end
 
         # compute best solution and its objective value
-        best_solution = mean
+        best_solution = mean # 12 x 12. One distribution for each step
         best_objective_value = self.f(best_solution)
 
         return mean, cov, self.q, best_solution, best_objective_value

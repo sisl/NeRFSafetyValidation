@@ -1,6 +1,6 @@
 {
   "simulator" : "NerfSimulator",
-  "n_simulations" : 3,
+  "n_simulations" : 50,
   "estimator_cfg": {
     "dil_iter": 3,
     "kernel_size": 5,
