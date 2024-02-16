@@ -1,12 +1,14 @@
 import subprocess
 import numpy as np
 import torch
+from torch.distributions import MultivariateNormal
 import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays
 from validation.simulators.NerfSimulator import NerfSimulator
 from validation.simulators.BlenderSimulator import BlenderSimulator
+from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
 from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
@@ -18,6 +20,13 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
         mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace)
         mc.validate()
+    elif stresstest == "Cross Entropy Method":
+        print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
+        f = lambda current_position, goal_position: 1 if current_position == goal_position else -1  # TODO: replace with real reward func
+        q = MultivariateNormal(torch.zeros(12), torch.eye(12))
+        p = MultivariateNormal(torch.zeros(12), torch.eye(12))
+        cem = CrossEntropyMethod(simulator, f, q, p, 3, 2, 2, blend_file, opt.workspace)
+        cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")
         exit()
