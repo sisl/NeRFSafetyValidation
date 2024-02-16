@@ -6,6 +6,10 @@ from scipy.stats import norm
 from validation.utils.blenderUtils import runBlenderOnFailure
 
 class CrossEntropyMethod:
+    
+    collisions = 0
+    stepsToCollision = 0
+
     def __init__(self, simulator, f, q, p, m, m_elite, kmax, blend_file, workspace):
         """
         Initialize the CrossEntropyMethod class.
@@ -26,7 +30,6 @@ class CrossEntropyMethod:
         self.m_elite = m_elite # 2?
         self.kmax = kmax # 2?
         self.mean = torch.zeros(12)
-        self.trajs = np.array((12, 10, 12))
         self.blend_file = blend_file
         self.workspace = workspace
 
@@ -53,32 +56,51 @@ class CrossEntropyMethod:
         for k in range(self.kmax):
             # sample and evaluate function on samples
             # samples = self.q.sample((self.m,))
-            noises = [] # 10 x 12 x 12 array (one noise for every simulation)
+            population = [] # 10 x 12 x 12 array (one noise for every simulation)
+            risks = np.array([])
+            outputSimulationList = []
+
             for simulationNumber in range(10):
                 # ONE SIMULATION BELOW
                 self.simulator.reset()
-                outputSimulationList = []
+                trajectory = []
+                step = []
+                riskSteps = []
                 outputStepList = []
-                risks = []
+                everCollided = False
+
                 for stepNumber in range(12):  
-                    noise = torch.normal(self.mean, self.q[i])
+                    noise = q[i].sample()
                     print(f"Step {stepNumber} with noise: {noise}")
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
 
                     # append the noises
-                    noises.append(noise)
                     noiseList = noise.cpu().numpy()
                     outputStepList.extend(noiseList)
-                    
+                    step = noiseList
+
                     # append the sdf value and positions
                     outputStepList.append(collisionVal)
                     outputStepList.extend(currentPos)
 
+                    # store sdf value
+                    riskSteps.append(collisionVal)
+                    trajectory.append(step) # store noise in trajectory
+
+                    # check for collisions
+                    if isCollision:
+                        self.collisions += 1
+                        self.stepsToCollision += stepNumber
+                        everCollided = True
+                        runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
+                        break
+
                 # TODO: store trajectory (for a simulation)
-                self.trajs[simulationNumber] = outputStepList
+                population.append(trajectory)
+                risks.append(min(riskSteps)) # store the smallest sdf value
 
                 # calculate likelihood of the trajectory
-                likelihood = self.trajectoryLikelihood(noiseList)
+                likelihood = self.trajectoryLikelihood(noiseList) # TODO fix this funtion
                 outputStepList.append(likelihood)
                 
                 # output the collision value
@@ -86,18 +108,6 @@ class CrossEntropyMethod:
 
                 # append the value of the step to the simulation data
                 outputSimulationList.append(outputStepList)
-
-                # check for collisions
-                if isCollision:
-                    self.collisions += 1
-                    self.stepsToCollision += stepNumber
-                    everCollided = True
-                    runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
-                    break
-
-                # TODO: store the "risks" (take the min of the sdf values and store it in f)
-                # risks = torch.tensor([self.f(min(outputStepList)) for n in noises])#f(samples)
-                risks.append(self.f(min(outputStepList)))
 
                 # write results to CSV using the format in MonteCarlo.py
                 with open("./results/collisionValues.csv", "a") as csvFile:
@@ -108,8 +118,16 @@ class CrossEntropyMethod:
                         writer.writerow(outputStepList) 
 
             # select elite samples and compute weights
-            elite_samples = noises[risks.topk(min(self.m, self.m_elite)).indices]
-            
+            # elite_samples = noises[risks.topk(min(self.m, self.m_elite)).indices]
+            elite_samples = np.argsort(risks)[:(min(self.m, self.m_elite))]
+
+            weights = np.array((12, len(elite_samples))) # each step in each elite sample carries a weight
+            # compute the weights
+            for i in range(12):
+                for sample in elite_samples:
+                    # each weight is a scalar. likelihood of a noise
+                    weights[i][sample] = torch.exp(self.p[i].log_prob(population[sample][i]) - self.q[i].log_prob(population[sample][i]))
+
             # for loop start
             for i in range(12):
                 weights = torch.exp(self.p[i].log_prob(elite_samples.squeeze()) -  self.q[i].log_prob(elite_samples.squeeze()))
