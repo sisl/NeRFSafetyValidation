@@ -67,7 +67,7 @@ class CrossEntropyMethod:
                 everCollided = False
 
                 for stepNumber in range(12):  
-                    noise = self.q[i].sample()
+                    noise = self.q[stepNumber].sample()
                     print(f"Step {stepNumber} with noise: {noise}")
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
 
