@@ -138,8 +138,8 @@ class CrossEntropyMethod:
                 covs[i] = cov
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
-                    cov += weights[j] * torch.ger(diff, diff)
-                cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # Add a small value to the diagonal for numerical stability
+                    cov += weights[j] * torch.outer(diff, diff)
+                cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
                 
                 self.q[i] = MultivariateNormal(mean, cov)
 
