@@ -124,7 +124,7 @@ class CrossEntropyMethod:
             # compute the weights
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
-                weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
+                weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i])).numpy()
                 
                 # normalize the weights
                 weights[i] = weights[i] / weights[i].sum()
