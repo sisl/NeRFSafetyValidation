@@ -124,17 +124,17 @@ class CrossEntropyMethod:
             # compute the weights
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
-                weights = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
+                weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
                 
                 # normalize the weights
-                weights = weights / weights.sum()
+                weights[i] = weights[i] / weights[i].sum()
                 
                 # update proposal distribution based on elite samples
-                mean = (elite_samples[:, i] * weights).sum()
+                mean = (elite_samples[:, i] * weights[i]).sum()
                 cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
-                    cov += weights[j] * torch.outer(diff, diff)
+                    cov += weights[i][j] * torch.outer(diff, diff)
                 cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
                 
                 self.means[i] = mean
