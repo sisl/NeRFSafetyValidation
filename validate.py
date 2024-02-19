@@ -26,7 +26,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         q = MultivariateNormal(torch.zeros(12), torch.eye(12))
         p = MultivariateNormal(torch.zeros(12), torch.eye(12))
         cem = CrossEntropyMethod(simulator, f, q, p, 3, 2, 2, blend_file, opt.workspace)
-        cem.optimize()
+        means, covs, q, best_solution, best_objective_value = cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")
         exit()

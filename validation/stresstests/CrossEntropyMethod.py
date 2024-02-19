@@ -50,9 +50,6 @@ class CrossEntropyMethod:
             best_solution: best solution found during the optimization process
             best_objective_value: value of the function_to_maximize at the best_solution
         """
-        all_elite_samples = torch.zeros((self.kmax, self.m_elite, self.q.event_shape[0]))
-        all_elite_scores = torch.zeros((self.kmax, self.m_elite))
-
         for k in range(self.kmax):
             # sample and evaluate function on samples
             # samples = self.q.sample((self.m,))
@@ -70,7 +67,7 @@ class CrossEntropyMethod:
                 everCollided = False
 
                 for stepNumber in range(12):  
-                    noise = q[i].sample()
+                    noise = self.q[i].sample()
                     print(f"Step {stepNumber} with noise: {noise}")
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
 
@@ -95,12 +92,12 @@ class CrossEntropyMethod:
                         runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
                         break
 
-                # TODO: store trajectory (for a simulation)
+                # store trajectory (for a simulation)
                 population.append(trajectory)
-                risks.append(min(riskSteps)) # store the smallest sdf value
+                risks = np.append(risks, min(riskSteps)) # store the smallest sdf value
 
                 # calculate likelihood of the trajectory
-                likelihood = self.trajectoryLikelihood(noiseList) # TODO fix this funtion
+                likelihood = self.trajectoryLikelihood(noiseList) # TODO: check vals
                 outputStepList.append(likelihood)
                 
                 # output the collision value
@@ -118,34 +115,37 @@ class CrossEntropyMethod:
                         writer.writerow(outputStepList) 
 
             # select elite samples and compute weights
-            # elite_samples = noises[risks.topk(min(self.m, self.m_elite)).indices]
-            elite_samples = np.argsort(risks)[:(min(self.m, self.m_elite))]
+            elite_indices = np.argsort(risks)[-self.m_elite:]
+            elite_samples = np.array(population)[elite_indices]
 
             weights = np.array((12, len(elite_samples))) # each step in each elite sample carries a weight
+
+            means = torch.zeros((12, self.q[0].event_shape[0]))
+            covs = torch.zeros((12, self.q[0].event_shape[0], self.q[0].event_shape[0]))
+
             # compute the weights
             for i in range(12):
-                for sample in elite_samples:
-                    # each weight is a scalar. likelihood of a noise
-                    weights[i][sample] = torch.exp(self.p[i].log_prob(population[sample][i]) - self.q[i].log_prob(population[sample][i]))
-
-            # for loop start
-            for i in range(12):
-                weights = torch.exp(self.p[i].log_prob(elite_samples.squeeze()) -  self.q[i].log_prob(elite_samples.squeeze()))
+                # compute the weights for the i-th step in each elite sample
+                weights = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
+                
+                # normalize the weights
                 weights = weights / weights.sum()
-
+                
                 # update proposal distribution based on elite samples
-                mean = (elite_samples * weights.unsqueeze(1)).sum(dim=0)
-                cov = torch.cov(elite_samples.T, aweights=weights)
-                cov = cov + 1e-1*torch.eye(self.q[i].event_shape[0])
+                mean = (elite_samples[:, i] * weights).sum()
+                cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
+                means[i] = mean
+                covs[i] = cov
+                for j in range(len(elite_samples)):
+                    diff = elite_samples[j, i] - mean
+                    cov += weights[j] * torch.ger(diff, diff)
+                cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # Add a small value to the diagonal for numerical stability
+                
                 self.q[i] = MultivariateNormal(mean, cov)
 
-                # save elite samples and their scores
-                all_elite_samples[k] = elite_samples
-                all_elite_scores[k] = risks.topk(min(self.m, self.m_elite)).values
-
-        # TODO: compute best solution and its objective value
-        best_solution = mean # 12 x 12. One distribution for each step
+        # compute best solution and its objective value
+        best_solution = means.mean(dim=0) # 12 x 12. One distribution for each step
         best_objective_value = self.f(best_solution)
 
-        return mean, cov, self.q, best_solution, best_objective_value
+        return means, covs, self.q, best_solution, best_objective_value
     
