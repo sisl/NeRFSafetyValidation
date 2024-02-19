@@ -5,6 +5,8 @@ import numpy as np
 from scipy.stats import norm
 from validation.utils.blenderUtils import runBlenderOnFailure
 
+import pdb
+
 class CrossEntropyMethod:
     def __init__(self, simulator, f, q, p, m, m_elite, kmax, noise_mean, noise_std, blend_file, workspace):
         """
@@ -25,8 +27,8 @@ class CrossEntropyMethod:
         self.m = m # 13?
         self.m_elite = m_elite # 12?
         self.kmax = kmax # 2?
-        self.means = torch.zeros(12)
-        self.covs = torch.zeros(12)
+        self.means = [0] * 12
+        self.covs = [0] * 12
         self.collisions = 0
         self.stepsToCollision = 0
         self.noise_mean = noise_mean.cpu().numpy()
@@ -52,6 +54,7 @@ class CrossEntropyMethod:
             best_objective_value: value of the function_to_maximize at the best_solution
         """
         for k in range(self.kmax):
+            print(f"Starting population {k}")
             # sample and evaluate function on samples
             # samples = self.q.sample((self.m,))
             population = [] # 10 x 12 x 12 array (one noise for every simulation)
@@ -69,7 +72,6 @@ class CrossEntropyMethod:
 
                 for stepNumber in range(12):  
                     noise = self.q[stepNumber].sample()
-                    print(f"Step {stepNumber} with noise: {noise}")
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
 
                     # append the noises
@@ -119,7 +121,12 @@ class CrossEntropyMethod:
             elite_indices = np.argsort(risks)[-self.m_elite:]
             elite_samples = torch.tensor(np.array(population)[elite_indices])
 
-            weights = np.array((12, len(elite_samples))) # each step in each elite sample carries a weight
+            # print the elite samples and their indices
+            # print(f"Elite Samples: {elite_samples}")
+            # print(f"Elite Indices: {elite_indices}")
+            # print(f"Risks: {risks}")
+
+            weights = [0] * 12 # each step in each elite sample carries a weight
 
             # compute the weights
             for i in range(12):
@@ -128,23 +135,54 @@ class CrossEntropyMethod:
                 
                 # normalize the weights
                 weights[i] = weights[i] / weights[i].sum()
-                
+                # pdb.set_trace()
+
                 # update proposal distribution based on elite samples
-                mean = (elite_samples[:, i] * weights[i]).sum()
+                # mean = (elite_samples[:, i] * weights[i]).sum()
+                mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples)
                 cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
                     cov += weights[i][j] * torch.outer(diff, diff)
                 cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
-                
+                # pdb.set_trace()
+
                 self.means[i] = mean
                 self.covs[i] = cov
                 self.q[i] = MultivariateNormal(mean, cov)
 
+            # print the updated proposal distribution
+            print(f"Updated Proposal Distribution:")
+            for i in range(12):
+                print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
+
+
+        print("===FINISHED OPTIMIZATION===")
+        print("===NOMINAL VALUES===\n")
+
+        # print the nominal values
+        for i in range(12):
+            print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
+
         # compute best solution and its objective value
-        best_solution = self.means.mean(dim=0) # 12 x 12. One distribution for each step
-        best_objective_value = self.f(best_solution)
+        # best_solution = self.means.mean(dim=0) # 12 x 12. One distribution for each step
+        # best_objective_value = self.f(best_solution)
+        best_objective_value = 999999
+        self.simulator.reset()
+        for stepNumber in range(12):
+            best_solutionMean = self.means[i]
+            best_solutionCov = self.covs[i]
+
+            dist = MultivariateNormal(best_solutionMean, best_solutionCov)
+
+            noise = dist.sample()
+            print(f"Step {stepNumber} with noise: {noise}")
+            isCollision, collisionVal, currentPos = self.simulator.step(noise)
+            best_objective_value = min(best_objective_value, collisionVal)
+            print(f"Collision: {isCollision}, Collision Value: {collisionVal}, Current Position: {currentPos}")
+
+            if isCollision: break
         
-        print(self.means, self.covs, self.q, best_solution, best_objective_value)
-        return self.means, self.covs, self.q, best_solution, best_objective_value
+        # print(self.means, self.covs, self.q, best_solution, best_objective_value)
+        return self.means, self.covs, self.q, best_solutionMean, best_solutionCov, best_objective_value
     
