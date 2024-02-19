@@ -36,6 +36,7 @@ class CrossEntropyMethod:
 
     def trajectoryLikelihood(self, noise):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
+        noise = noise.cpu()
         likelihoods = norm.pdf(noise, loc = self.noise_mean, scale = self.noise_std)
         logLikelihoods = np.log(likelihoods)
         return logLikelihoods.sum()
