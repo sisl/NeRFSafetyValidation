@@ -6,11 +6,7 @@ from scipy.stats import norm
 from validation.utils.blenderUtils import runBlenderOnFailure
 
 class CrossEntropyMethod:
-    
-    collisions = 0
-    stepsToCollision = 0
-
-    def __init__(self, simulator, f, q, p, m, m_elite, kmax, blend_file, workspace):
+    def __init__(self, simulator, f, q, p, m, m_elite, kmax, noise_mean, noise_std, blend_file, workspace):
         """
         Initialize the CrossEntropyMethod class.
 
@@ -29,13 +25,18 @@ class CrossEntropyMethod:
         self.m = m # 3?
         self.m_elite = m_elite # 2?
         self.kmax = kmax # 2?
-        self.mean = torch.zeros(12)
+        self.means = torch.zeros(12)
+        self.covs = torch.zeros(12)
+        self.collisions = 0
+        self.stepsToCollision = 0
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
         self.blend_file = blend_file
         self.workspace = workspace
 
     def trajectoryLikelihood(self, noise):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
-        likelihoods = norm.pdf(noise, loc = self.noise_mean_cpu, scale = self.noise_std_cpu)
+        likelihoods = norm.pdf(noise, loc = self.noise_mean, scale = self.noise_std)
         logLikelihoods = np.log(likelihoods)
         return logLikelihoods.sum()
 
@@ -97,7 +98,7 @@ class CrossEntropyMethod:
                 risks = np.append(risks, min(riskSteps)) # store the smallest sdf value
 
                 # calculate likelihood of the trajectory
-                likelihood = self.trajectoryLikelihood(noiseList) # TODO: check vals
+                likelihood = self.trajectoryLikelihood(noiseList) # TODO: check this
                 outputStepList.append(likelihood)
                 
                 # output the collision value
@@ -120,9 +121,6 @@ class CrossEntropyMethod:
 
             weights = np.array((12, len(elite_samples))) # each step in each elite sample carries a weight
 
-            means = torch.zeros((12, self.q[0].event_shape[0]))
-            covs = torch.zeros((12, self.q[0].event_shape[0], self.q[0].event_shape[0]))
-
             # compute the weights
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
@@ -134,18 +132,19 @@ class CrossEntropyMethod:
                 # update proposal distribution based on elite samples
                 mean = (elite_samples[:, i] * weights).sum()
                 cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
-                means[i] = mean
-                covs[i] = cov
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
                     cov += weights[j] * torch.outer(diff, diff)
                 cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
                 
+                self.means[i] = mean
+                self.covs[i] = cov
                 self.q[i] = MultivariateNormal(mean, cov)
 
         # compute best solution and its objective value
-        best_solution = means.mean(dim=0) # 12 x 12. One distribution for each step
+        best_solution = self.means.mean(dim=0) # 12 x 12. One distribution for each step
         best_objective_value = self.f(best_solution)
-
-        return means, covs, self.q, best_solution, best_objective_value
+        
+        print(self.means, self.covs, self.q, best_solution, best_objective_value)
+        return self.means, self.covs, self.q, best_solution, best_objective_value
     
