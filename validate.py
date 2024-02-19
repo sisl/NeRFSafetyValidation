@@ -25,7 +25,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         f = lambda current_position, goal_position: 1 if current_position == goal_position else -1  # TODO: replace with real reward func
         q = [MultivariateNormal(torch.zeros(12), torch.eye(12)) for _ in range(12)]
         p = [MultivariateNormal(torch.zeros(12), torch.eye(12)) for _ in range(12)]
-        cem = CrossEntropyMethod(simulator, f, q, p, 3, 2, 2, noise_mean, noise_std, blend_file, opt.workspace)
+        cem = CrossEntropyMethod(simulator, f, q, p, 13, 12, 2, noise_mean, noise_std, blend_file, opt.workspace)
         means, covs, q, best_solution, best_objective_value = cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")

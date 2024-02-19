@@ -22,8 +22,8 @@ class CrossEntropyMethod:
         self.f = f # 10 x 1 (one score for each simulation)
         self.q = q # 12 x 12 (12 step #s and 12 noise parameters)
         self.p = p # same as above
-        self.m = m # 3?
-        self.m_elite = m_elite # 2?
+        self.m = m # 13?
+        self.m_elite = m_elite # 12?
         self.kmax = kmax # 2?
         self.means = torch.zeros(12)
         self.covs = torch.zeros(12)
