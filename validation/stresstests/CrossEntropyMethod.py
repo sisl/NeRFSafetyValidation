@@ -117,7 +117,7 @@ class CrossEntropyMethod:
 
             # select elite samples and compute weights
             elite_indices = np.argsort(risks)[-self.m_elite:]
-            elite_samples = np.array(population)[elite_indices]
+            elite_samples = torch.tensor(np.array(population)[elite_indices])
 
             weights = np.array((12, len(elite_samples))) # each step in each elite sample carries a weight
 
