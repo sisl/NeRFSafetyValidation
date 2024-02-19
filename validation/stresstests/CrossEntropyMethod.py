@@ -29,8 +29,8 @@ class CrossEntropyMethod:
         self.covs = torch.zeros(12)
         self.collisions = 0
         self.stepsToCollision = 0
-        self.noise_mean = noise_mean
-        self.noise_std = noise_std
+        self.noise_mean = noise_mean.cpu().numpy()
+        self.noise_std = noise_std.cpu().numpy()
         self.blend_file = blend_file
         self.workspace = workspace
 
