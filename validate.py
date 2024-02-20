@@ -22,8 +22,14 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         mc.validate()
     elif stresstest == "Cross Entropy Method":
         print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
-        q = [MultivariateNormal(torch.zeros(12), torch.eye(12)) for _ in range(12)]
-        p = [MultivariateNormal(torch.zeros(12), torch.eye(12)) for _ in range(12)]
+        
+        noise_meanQ = torch.tensor(noise_mean)
+        noise_covQ = torch.diag(torch.tensor(noise_std))
+        noise_meanP = torch.tensor(noise_mean)
+        noise_covP = torch.diag(torch.tensor(noise_std))
+
+        q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
+        p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]
         cem = CrossEntropyMethod(simulator, q, p, 13, 12, 2, blend_file, opt.workspace)
         means, covs, q, best_solution, best_objective_value = cem.optimize()
     else:
