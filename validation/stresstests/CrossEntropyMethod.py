@@ -37,12 +37,6 @@ class CrossEntropyMethod:
 
         self.TOY_PROBLEM = True
 
-    def trajectoryLikelihood(self, noise):
-        # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
-        likelihoods = norm.pdf(noise, loc = self.noise_mean, scale = self.noise_std)
-        logLikelihoods = np.log(likelihoods)
-        return logLikelihoods.sum()
-
     def optimize(self):
         """
         Perform the optimization process.
@@ -66,6 +60,8 @@ class CrossEntropyMethod:
             risks = np.array([])
             outputSimulationList = []
 
+            self.collisions = 0
+            self.stepsToCollision = 0
 
             if self.TOY_PROBLEM:
                 # plot the path of each simulation
@@ -80,9 +76,8 @@ class CrossEntropyMethod:
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
 
-                step = []
-                riskSteps = np.array([])
-                outputStepList = []
+                riskSteps = np.array([]) # store the score values for each step
+                outputStepList = [] # what will be written to the CSV
                 everCollided = False
 
                 for stepNumber in range(12):  
@@ -95,9 +90,7 @@ class CrossEntropyMethod:
                         positions = np.append(positions, [currentPos], axis=0)
 
                     # append the noises
-                    # noiseList = noise.cpu().numpy()
                     outputStepList.extend(trajectory[stepNumber])
-                    # step = noiseList
 
                     # append the sdf value and positions
                     outputStepList.append(collisionVal)
@@ -105,14 +98,14 @@ class CrossEntropyMethod:
 
                     # store sdf value
                     riskSteps = np.append(riskSteps, collisionVal)
-                    # trajectory.append(step) # store noise in trajectory
 
                     # check for collisions
                     if isCollision:
                         self.collisions += 1
                         self.stepsToCollision += stepNumber
                         everCollided = True
-                        # runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
+                        if not self.TOY_PROBLEM:
+                            runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
                         break
                 
                 if self.TOY_PROBLEM:
@@ -126,21 +119,25 @@ class CrossEntropyMethod:
                 else:
                     risks = np.append(risks, min(riskSteps)) # store the smallest sdf value (the closest we get to a crash)
                 
-                
-
                 # output the collision value
                 outputStepList.append(isCollision)
 
                 # append the value of the step to the simulation data
                 outputSimulationList.append(outputStepList)
 
-                # write results to CSV using the format in MonteCarlo.py
-                # with open("./results/collisionValues.csv", "a") as csvFile:
-                #     print(f"Noise List: {noiseList}")
-                #     writer = csv.writer(csvFile)
-                #     for outputStepList in outputSimulationList:
-                #         outputStepList.append(everCollided)
-                #         writer.writerow(outputStepList) 
+                # print the percentage of collisions and the average number of steps to collision, if a collision has occurred
+                if everCollided:
+                    print(f"Percentage of collisions: {self.collisions / (simulationNumber + 1) * 100}%")
+                    print(f"Average number of steps to collision: {self.stepsToCollision / (self.collisions)}")
+
+                if not self.TOY_PROBLEM:
+                    # write results to CSV using the format in MonteCarlo.py
+                    with open("./results/collisionValues.csv", "a") as csvFile:
+                        print(f"Noise List: {trajectory}")
+                        writer = csv.writer(csvFile)
+                        for outputStepList in outputSimulationList:
+                            outputStepList.append(everCollided)
+                            writer.writerow(outputStepList) 
 
             if self.TOY_PROBLEM:
                 # plot a star at the start and goal positions
@@ -158,11 +155,6 @@ class CrossEntropyMethod:
             # print average score of elite samples
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
-            
-            # print the elite samples and their indices
-            # print(f"Elite Samples: {elite_samples}")
-            # print(f"Elite Indices: {elite_indices}")
-            # print(f"Risks: {risks}")
 
             weights = [0] * 12 # each step in each elite sample carries a weight
 
@@ -170,14 +162,13 @@ class CrossEntropyMethod:
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
                 weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
-                
+                print(f"Likelihood of step {i} of elite samples under p: {self.p[i].log_prob(elite_samples[:, i]).mean()}")
                 # normalize the weights
                 weights[i] = weights[i] / weights[i].sum()
                 
 
                 # update proposal distribution based on elite samples
-                # mean = (elite_samples[:, i] * weights[i]).sum()
-                mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples)
+                mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
                 cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
@@ -229,8 +220,6 @@ class CrossEntropyMethod:
             print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
         # compute best solution and its objective value
-        # best_solution = self.means.mean(dim=0) # 12 x 12. One distribution for each step
-        # best_objective_value = self.f(best_solution)
         best_objective_value = 999999
         self.simulator.reset()
         for stepNumber in range(12):
@@ -247,6 +236,5 @@ class CrossEntropyMethod:
 
             if isCollision: break
         
-        # print(self.means, self.covs, self.q, best_solution, best_objective_value)
         return self.means, self.covs, self.q, best_solutionMean, best_solutionCov, best_objective_value
     
