@@ -30,7 +30,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
 
         q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
         p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]
-        cem = CrossEntropyMethod(simulator, q, p, 13, 12, 2, blend_file, opt.workspace)
+        cem = CrossEntropyMethod(simulator, q, p, 4, 2, 3, blend_file, opt.workspace)
         means, covs, q, best_solution, best_objective_value = cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")
