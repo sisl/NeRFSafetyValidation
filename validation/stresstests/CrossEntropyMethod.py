@@ -188,7 +188,7 @@ class CrossEntropyMethod:
 
                 plt.figure()
                 for sample in population:
-                    sns.histplot(sample[i].numpy(), kde=True, bins=30)
+                    sns.histplot(sample[i], kde=True, bins=30)
                 plt.title(f'Distribution of noise vectors at step {i}')
                 plt.xlabel('Noise')
                 plt.ylabel('Density')
