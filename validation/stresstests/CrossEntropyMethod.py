@@ -171,7 +171,7 @@ class CrossEntropyMethod:
                 for j in range(len(elite_samples)):
                     diff = elite_samples[j, i] - mean
                     cov += weights[i][j] * torch.outer(diff, diff)
-                cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
+                cov = cov + 1e-5 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
 
                 self.means[i] = mean
                 self.covs[i] = cov
