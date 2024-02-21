@@ -116,7 +116,7 @@ class NerfSimulator(gym.Env):
             # Replan from the state estimate
             self.traj.learn_update(self.iter)            
 
-            collisionVal = -1;
+            collisionVal = 9999
 
             # check for collisions
             for current_state in true_states_interpolated[-num_interpolated_points:]:

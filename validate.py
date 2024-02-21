@@ -30,8 +30,8 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
 
         q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
         p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]
-        cem = CrossEntropyMethod(simulator, q, p, 4, 2, 3, blend_file, opt.workspace)
-        means, covs, q, best_solution, best_objective_value = cem.optimize()
+        cem = CrossEntropyMethod(simulator, q, p, 5, 2, 10, blend_file, opt.workspace)
+        means, covs, q, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")
         exit()
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     # noise = torch.normal(noise_mean, noise_std)
     
     # Main loop
-    validate(simulator, "Monte Carlo", noise_mean, noise_std, n_simulations)
+    validate(simulator, "Cross Entropy Method", noise_mean, noise_std, n_simulations)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')

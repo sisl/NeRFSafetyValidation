@@ -35,7 +35,7 @@ class CrossEntropyMethod:
         self.blend_file = blend_file
         self.workspace = workspace
 
-        self.TOY_PROBLEM = True
+        self.TOY_PROBLEM = False
 
     def optimize(self):
         """
@@ -77,10 +77,10 @@ class CrossEntropyMethod:
                     positions = np.array([[0, 0]], dtype=float)
 
                 riskSteps = np.array([]) # store the score values for each step
-                outputStepList = [] # what will be written to the CSV
                 everCollided = False
 
                 for stepNumber in range(12):  
+                    outputStepList = [k, simulationNumber, stepNumber] # what will be written to the CSV
                     # noise = self.q[stepNumber].sample()
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
@@ -91,10 +91,14 @@ class CrossEntropyMethod:
 
                     # append the noises
                     outputStepList.extend(trajectory[stepNumber])
-
                     # append the sdf value and positions
                     outputStepList.append(collisionVal)
                     outputStepList.extend(currentPos)
+                    # output the collision value
+                    outputStepList.append(isCollision)
+
+                    # append the value of the step to the simulation data
+                    outputSimulationList.append(outputStepList)
 
                     # store sdf value
                     riskSteps = np.append(riskSteps, collisionVal)
@@ -119,12 +123,6 @@ class CrossEntropyMethod:
                 else:
                     risks = np.append(risks, min(riskSteps)) # store the smallest sdf value (the closest we get to a crash)
                 
-                # output the collision value
-                outputStepList.append(isCollision)
-
-                # append the value of the step to the simulation data
-                outputSimulationList.append(outputStepList)
-
                 # print the percentage of collisions and the average number of steps to collision, if a collision has occurred
                 if everCollided:
                     print(f"Percentage of collisions: {self.collisions / (simulationNumber + 1) * 100}%")
@@ -192,9 +190,9 @@ class CrossEntropyMethod:
                 break
 
             # print the updated proposal distribution
-            # print(f"Updated Proposal Distribution:")
-            # for i in range(12):
-            #     print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
+            print(f"Updated Proposal Distribution:")
+            for i in range(12):
+                print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
 
         # plot the population and elite scores
