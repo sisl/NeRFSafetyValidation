@@ -4,7 +4,7 @@ from torch.distributions import MultivariateNormal
 import numpy as np
 from scipy.stats import norm
 from validation.utils.blenderUtils import runBlenderOnFailure
-
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 import pdb
@@ -185,6 +185,15 @@ class CrossEntropyMethod:
 
                     zeroedWeight = True
                     break
+
+                plt.figure()
+                for sample in population:
+                    sns.histplot(sample[i].numpy(), kde=True, bins=30)
+                plt.title(f'Distribution of noise vectors at step {i}')
+                plt.xlabel('Noise')
+                plt.ylabel('Density')
+                plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
+                plt.close()
             
             if zeroedWeight:
                 break
