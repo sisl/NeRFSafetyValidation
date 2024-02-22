@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 import pdb
 
+from validation.utils.mathUtils import is_positive_definite
+
 class CrossEntropyMethod:
     def __init__(self, simulator, q, p, m, m_elite, kmax, blend_file, workspace):
         """
@@ -178,6 +180,9 @@ class CrossEntropyMethod:
 
                 self.means[i] = mean
                 self.covs[i] = cov
+
+                # check is cov is PD
+                print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
                 try:
                     self.q[i] = MultivariateNormal(mean, cov)
                 except ValueError:
