@@ -3,6 +3,7 @@ import torch
 from torch.distributions import MultivariateNormal
 import numpy as np
 from scipy.stats import norm
+from scipy.special import logsumexp
 from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -162,7 +163,9 @@ class CrossEntropyMethod:
                 weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
                 print(f"Likelihood of step {i} of elite samples under p: {self.p[i].log_prob(elite_samples[:, i]).mean()}")
                 # normalize the weights
-                weights[i] = weights[i] / weights[i].sum()
+                # weights[i] = weights[i] / weights[i].sum()
+                log_weights = np.log(weights[i].cpu())
+                weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
                 
 
                 # update proposal distribution based on elite samples
