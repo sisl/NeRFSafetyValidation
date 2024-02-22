@@ -3,11 +3,14 @@ import torch
 from torch.distributions import MultivariateNormal
 import numpy as np
 from scipy.stats import norm
+from scipy.special import logsumexp
 from validation.utils.blenderUtils import runBlenderOnFailure
-
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 import pdb
+
+from validation.utils.mathUtils import is_positive_definite
 
 class CrossEntropyMethod:
     def __init__(self, simulator, q, p, m, m_elite, kmax, blend_file, workspace):
@@ -167,19 +170,21 @@ class CrossEntropyMethod:
                 weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
                 print(f"Likelihood of step {i} of elite samples under p: {self.p[i].log_prob(elite_samples[:, i]).mean()}")
                 # normalize the weights
-                weights[i] = weights[i] / weights[i].sum()
+                # weights[i] = weights[i] / weights[i].sum()
+                log_weights = np.log(weights[i].cpu())
+                weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
                 
 
                 # update proposal distribution based on elite samples
                 mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-                cov = torch.zeros(self.q[i].event_shape[0], self.q[i].event_shape[0])
-                for j in range(len(elite_samples)):
-                    diff = elite_samples[j, i] - mean
-                    cov += weights[i][j] * torch.outer(diff, diff)
-                cov = cov + 1e-1 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
+                cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
+                cov = cov + 1e-5 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
 
                 self.means[i] = mean
                 self.covs[i] = cov
+
+                # check is cov is PD
+                print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
                 try:
                     self.q[i] = MultivariateNormal(mean, cov)
                 except ValueError:
@@ -190,6 +195,15 @@ class CrossEntropyMethod:
 
                     zeroedWeight = True
                     break
+
+                plt.figure()
+                for sample in population:
+                    sns.histplot(sample[i], kde=True, bins=30)
+                plt.title(f'Distribution of noise vectors at step {i}')
+                plt.xlabel('Noise')
+                plt.ylabel('Density')
+                plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
+                plt.close()
             
             if zeroedWeight:
                 break

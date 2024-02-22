@@ -18,3 +18,4 @@ lpips
 imageio
 torchmetrics
 gym
+seaborn
