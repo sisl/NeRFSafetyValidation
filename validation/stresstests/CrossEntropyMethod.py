@@ -58,7 +58,6 @@ class CrossEntropyMethod:
             # sample and evaluate function on samples
             population = [] # 10 x 12 x 12 array (one noise for every simulation)
             risks = np.array([])
-            outputSimulationList = []
 
             self.collisions = 0
             self.stepsToCollision = 0
@@ -72,6 +71,8 @@ class CrossEntropyMethod:
                 self.simulator.reset()
                 noises = [self.q[stepNumber].sample() for stepNumber in range(12)] # precompute noise values
                 trajectory = [noise.cpu().numpy() for noise in noises]
+                outputSimulationList = []
+
 
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
@@ -79,7 +80,7 @@ class CrossEntropyMethod:
                 riskSteps = np.array([]) # store the score values for each step
                 everCollided = False
 
-                for stepNumber in range(12):  
+                for stepNumber in range(12):
                     outputStepList = [k, simulationNumber, stepNumber] # what will be written to the CSV
                     # noise = self.q[stepNumber].sample()
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
@@ -96,6 +97,10 @@ class CrossEntropyMethod:
                     outputStepList.extend(currentPos)
                     # output the collision value
                     outputStepList.append(isCollision)
+
+                    # output the probability of the noise under p and q
+                    outputStepList.append(self.p[stepNumber].log_prob(noises[stepNumber]))
+                    outputStepList.append(self.q[stepNumber].log_prob(noises[stepNumber]))
 
                     # append the value of the step to the simulation data
                     outputSimulationList.append(outputStepList)

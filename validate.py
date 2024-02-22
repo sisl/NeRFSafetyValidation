@@ -24,9 +24,9 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
         
         noise_meanQ = torch.tensor(noise_mean)
-        noise_covQ = torch.diag(torch.tensor(noise_std))
+        noise_covQ = torch.square(torch.diag(torch.tensor(noise_std)))
         noise_meanP = torch.tensor(noise_mean)
-        noise_covP = torch.diag(torch.tensor(noise_std))
+        noise_covP = torch.square(torch.diag(torch.tensor(noise_std)))
 
         q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
         p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]

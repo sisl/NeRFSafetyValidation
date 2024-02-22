@@ -282,7 +282,8 @@ class Planner:
             opt.zero_grad()
             self.epoch = it
             loss = self.total_cost()
-            print(it, loss)
+            if it % 50 == 0:
+                print(it, loss)
             loss.backward()
             opt.step()
             # it += 1
