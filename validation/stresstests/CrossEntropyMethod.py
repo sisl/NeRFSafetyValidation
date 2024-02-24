@@ -98,8 +98,6 @@ class CrossEntropyMethod:
                     # append the sdf value and positions
                     outputStepList.append(collisionVal)
                     outputStepList.extend(currentPos)
-                    # output the collision value
-                    outputStepList.append(isCollision)
 
                     # output the probability of the noise under p and q
                     outputStepList.append(self.p[stepNumber].log_prob(noises[stepNumber]))
@@ -107,6 +105,9 @@ class CrossEntropyMethod:
 
                     # append the value of the step to the simulation data
                     outputSimulationList.append(outputStepList)
+
+                    # output the collision value
+                    outputStepList.append(isCollision)
 
                     # store sdf value
                     riskSteps = np.append(riskSteps, collisionVal)
@@ -170,15 +171,23 @@ class CrossEntropyMethod:
                 weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
                 print(f"Likelihood of step {i} of elite samples under p: {self.p[i].log_prob(elite_samples[:, i]).mean()}")
                 # normalize the weights
-                # weights[i] = weights[i] / weights[i].sum()
                 log_weights = np.log(weights[i].cpu())
                 weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
                 
 
                 # update proposal distribution based on elite samples
                 mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
+                # pdb.set_trace()
+
                 cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
-                cov = cov + 1e-5 * torch.eye(self.q[i].event_shape[0])  # add a small value to the diagonal for numerical stability
+
+                # only keep the diagonal of the covariance matrix 
+                diag = cov.diag()
+                if (diag > 0.1).any() or (diag < 0).any():
+                    print(f"Step {i} in population {k} has a covariance matrix with a diagonal that is too large or negative! Clamping between 0 and 0.1...")
+                    diag = torch.clamp(diag, 0, 0.1)
+                
+                cov = torch.diag(diag)
 
                 self.means[i] = mean
                 self.covs[i] = cov
