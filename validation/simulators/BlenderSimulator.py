@@ -86,25 +86,14 @@ class BlenderSimulator(gym.Env):
             for i in range(self.true_states.shape[1]):
                 true_states_interpolated[:, i] = np.interp(xnew, x, self.true_states[:, i])
             
-            with torch.no_grad():
-                print(f"Calling nerf render with pose {true_pose}")
-                nerf_image = self.filter.render_from_pose(true_pose)
-                nerf_image = torch.squeeze(nerf_image).cpu().detach().numpy()
-                nerf_image_reshaped = nerf_image.reshape((800, 800, -1))
-                nerf_image_reshaped *= 255
-                nerf_image_reshaped = nerf_image_reshaped.astype(np.uint8)
-            # convert to torch object
-            
             print("saving image files")
             gt_img_tuple = gt_img.cpu().detach().numpy()
             matplotlib.image.imsave("./sim_img_cache/blenderRender.png", gt_img_tuple)
             
-            matplotlib.image.imsave("./sim_img_cache/NeRFRender.png", nerf_image_reshaped)
-
             # Given the planner's recommended action and the observation, perform state estimation. true_pose
             # is here only to benchmark performance. 
             true_pose = true_pose.cpu().detach().numpy()
-            state_est = self.filter.estimate_state(nerf_image_reshaped, true_pose, action)
+            state_est = self.filter.estimate_state(gt_img, true_pose, action)
 
             #state estimate is 12-vector. Transform to 18-vector
             state_est = torch.cat([state_est[:6], vec_to_rot_matrix(state_est[6:9]).reshape(-1), state_est[9:]], dim=-1)
