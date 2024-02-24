@@ -5,7 +5,7 @@ from torch.distributions import MultivariateNormal
 import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
-from nerf.utils import PSNRMeter, Trainer, get_rays
+from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
 from validation.simulators.NerfSimulator import NerfSimulator
 from validation.simulators.BlenderSimulator import BlenderSimulator
 from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
@@ -116,6 +116,8 @@ if __name__ == "__main__":
     with open('envConfig.json', 'r') as json_file:
         envConfig = json.load(json_file)
     print(f"Reading environment parameters from envConfig.json:\n{envConfig}")
+
+    seed_everything(opt.seed)
 
     model = NeRFNetwork(
         encoding="hashgrid",
