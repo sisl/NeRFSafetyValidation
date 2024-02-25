@@ -76,6 +76,9 @@ class CrossEntropyMethod:
                 trajectory = [noise.cpu().numpy() for noise in noises]
                 outputSimulationList = []
 
+                pCumulative = 0
+                qCumulative = 0
+
 
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
@@ -100,8 +103,15 @@ class CrossEntropyMethod:
                     outputStepList.extend(currentPos)
 
                     # output the probability of the noise under p and q
-                    outputStepList.append(self.p[stepNumber].log_prob(noises[stepNumber]))
-                    outputStepList.append(self.q[stepNumber].log_prob(noises[stepNumber]))
+                    pStep = self.p[stepNumber].log_prob(noises[stepNumber])
+                    qStep = self.q[stepNumber].log_prob(noises[stepNumber])
+
+                    pCumulative += pStep
+                    qCumulative += qStep
+                    outputStepList.append(pStep.item())
+                    outputStepList.append(qStep.item())
+                    outputStepList.append(pCumulative.item())
+                    outputStepList.append(qCumulative.item())
 
                     # append the value of the step to the simulation data
                     outputSimulationList.append(outputStepList)
@@ -139,7 +149,7 @@ class CrossEntropyMethod:
 
                 if not self.TOY_PROBLEM:
                     # write results to CSV using the format in MonteCarlo.py
-                    with open("./results/collisionValues.csv", "a") as csvFile:
+                    with open("./results/collisionValuesCEM_k10m10.csv", "a") as csvFile:
                         print(f"Noise List: {trajectory}")
                         writer = csv.writer(csvFile)
                         for outputStepList in outputSimulationList:
@@ -157,7 +167,8 @@ class CrossEntropyMethod:
             print(f"Average score of population {k}: {risks.mean()}")
             populationScores.append(risks.mean())
             # select elite samples and compute weights
-            elite_indices = np.argsort(risks)[-self.m_elite:]
+            # elite_indices = np.argsort(risks)[-self.m_elite:] # top m_elite indices
+            elite_indices = np.argsort(risks)[:self.m_elite] # bottom m_elite indices
             elite_samples = torch.tensor(np.array(population)[elite_indices])
             # print average score of elite samples
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
