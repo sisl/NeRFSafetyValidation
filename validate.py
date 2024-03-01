@@ -12,6 +12,8 @@ from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
 from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
+from validation.utils.replay import replay
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ####################### MAIN LOOP ##########################################
@@ -90,6 +92,9 @@ if __name__ == "__main__":
     parser.add_argument('--clip_text', type=str, default='', help="text input for CLIP guidance")
     parser.add_argument('--rand_pose', type=int, default=-1, help="<0 uses no rand pose, =0 only uses rand pose, >0 sample one rand pose every $ known poses")
 
+    ### validation replay
+    parser.add_argument('--r', action='store_true', help="run failures from a NerfSimulator run on BlenderSimulator")
+
     opt = parser.parse_args()
 
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -110,8 +115,6 @@ if __name__ == "__main__":
         from nerf.network_tcnn import NeRFNetwork
     else:
         from nerf.network import NeRFNetwork
-
-    # TODO: figure out how to seed everything
 
     with open('envConfig.json', 'r') as json_file:
         envConfig = json.load(json_file)
@@ -272,9 +275,12 @@ if __name__ == "__main__":
     noise_std = extra_cfg['mpc_noise_std']
     noise_mean = extra_cfg['mpc_noise_mean']
     # noise = torch.normal(noise_mean, noise_std)
-    
-    # Main loop
-    validate(simulator, "Cross Entropy Method", noise_mean, noise_std, n_simulations)
+
+    if opt.r:
+        replay('results/collisionValuesBlenderMC_n100.csv', simulator_cfg, start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    else:
+        # Main loop
+        validate(simulator, "Cross Entropy Method", noise_mean, noise_std, n_simulations)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
