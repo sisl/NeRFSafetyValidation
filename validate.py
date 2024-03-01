@@ -277,7 +277,7 @@ if __name__ == "__main__":
     # noise = torch.normal(noise_mean, noise_std)
 
     if opt.r:
-        replay('results/collisionValuesBlenderMC_n100.csv', simulator_cfg, start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+        replay('results/collisionValuesBlenderMC_n100.csv', start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     else:
         # Main loop
         validate(simulator, "Cross Entropy Method", noise_mean, noise_std, n_simulations)
