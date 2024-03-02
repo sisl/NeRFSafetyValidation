@@ -45,6 +45,9 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
                         if row[-2] == 'TRUE':
                             break
                         row = next(reader, None)  
+                    noise_vectors.append(noises)
+
+            
 
 
     print(simulationNums)
