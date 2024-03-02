@@ -17,6 +17,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         csv_file (str): The path to the CSV file.
         start_state (torch.Tensor): The starting state of the simulator.
         end_state (torch.Tensor): The ending state of the simulator.
+        noise_mean (torch.Tensor): Means of disturbances.
+        noise_std (torch.Tensor): Standard deviation of noises to use.
         agent_cfg (dict): The configuration for the agent.
         planner_cfg (dict): The configuration for the planner.
         camera_cfg (dict): The configuration for the camera.
@@ -64,11 +66,10 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         simulator.reset()
         simulationNumber = simulationNums.pop()
         simulationSteps = noise_vectors.pop()
-        # TODO change this from max steps to actual steps
+        print(f"Replaying simulation {simulationNumber}")
         for step in trange(len(simulationSteps)):
-            # pdb.set_trace()
             noise = simulationSteps[step]
-            print(f"Step {step} with noise: {noise}")
+            print(f"Replaying step {step} with noise: {noise}")
             isCollision, collisionVal, currentPos = simulator.step(noise)
             outputStepList = [simulationNumber, step]
 
@@ -101,7 +102,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             #     runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
             #     break
 
-        with open("./results/collisionValuesReplay.csv", "a") as csvFile:
+        with open("results/collisionValuesReplay.csv", "a") as csvFile:
             print(f"Noise List: {noiseList}")
             writer = csv.writer(csvFile)
             for outputStepList in outputSimulationList:
