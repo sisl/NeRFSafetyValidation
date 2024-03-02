@@ -34,22 +34,22 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
 
     if csv_file_name:
         csv_file_path = os.path.join('results', csv_file_name)
-        simulationNums = set()
-        noise_vectors = []
+        simulationData = {}
 
         with open(csv_file_path, 'r') as file:
             reader = csv.reader(file)
             for row in reader:
                 if row[-1] == 'TRUE':
-                    simulationNums.add(row[0])
-                    noises = []
+                    simulationNumber = row[0]
+                    print(f"SIMULATION NUMBER {row[0]}")
                     while True:
                         noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
-                        noises.append(noise_vector)
+                        if simulationNumber not in simulationData:
+                            simulationData[simulationNumber] = []
+                        simulationData[simulationNumber].append(noise_vector)
                         if row[-2] == 'TRUE':
                             break
                         row = next(reader, None)  
-                    noise_vectors.append(noises)
 
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
@@ -57,10 +57,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
     simTrajLogLikelihood = 0
 
     print(f"Starting replay validation on BlenderSimulator")
-    while simulationNums:
+    for simulationNumber, simulationSteps in simulationData.items():
         simulator.reset()
-        simulationNumber = simulationNums.pop()
-        simulationSteps = noise_vectors.pop()
         print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps!")
         for step in trange(len(simulationSteps)):
             noise = simulationSteps[step]
@@ -92,10 +90,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
 
             if isCollision:
                 break
-            #     collisions += 1
-            #     stepsToCollision += stepNumber
-            #     everCollided = True
-            #     runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
 
         with open("results/collisionValuesReplay.csv", "a") as csvFile:
             print(f"Noise List: {noiseList}")
@@ -112,4 +106,5 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     return logLikelihoods.sum()
 
 def createConfusionMatrix():
+    # TODO: implement
     pass
