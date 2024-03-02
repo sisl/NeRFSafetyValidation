@@ -27,23 +27,24 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
 
     file_list = os.listdir('results')
     csv_file_name = next((file for file in file_list if file.lower().endswith('.csv')), None)
-    csv_file_path = os.path.join('results', csv_file_name)
 
-    with open(csv_file_path, 'r') as file:
-        reader = csv.reader(file)
+    if csv_file_name:
+        csv_file_path = os.path.join('results', csv_file_name)
         simulationNums = set()
         noise_vectors = []
-        for row in reader:
-            if row[-1] == 'TRUE':
-                step = False
-                simulationNums.add(row[0])
-                noises = []
-                while not step:
-                    noise_vector = np.array(row[2:14], dtype=np.float32)
-                    noises.append(noise_vector)
-                    if row[-2] == 'TRUE':
-                        step = True
-                noise_vectors.append(noises)
+
+        with open(csv_file_path, 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[-1] == 'TRUE':
+                    simulationNums.add(row[0])
+                    noises = []
+                    while True:
+                        noise_vector = np.array(row[2:14], dtype=np.float32)
+                        noises.append(noise_vector)
+                        if row[-2] == 'TRUE':
+                            break
+                        row = next(reader, None)  
 
 
     print(simulationNums)
