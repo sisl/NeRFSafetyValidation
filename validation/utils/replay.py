@@ -5,7 +5,7 @@ from torch import norm
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
 
-def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
+def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -14,7 +14,6 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
         csv_file (str): The path to the CSV file.
         start_state (torch.Tensor): The starting state of the simulator.
         end_state (torch.Tensor): The ending state of the simulator.
-        steps (int): The number of steps in each trajectory.
         agent_cfg (dict): The configuration for the agent.
         planner_cfg (dict): The configuration for the planner.
         camera_cfg (dict): The configuration for the camera.
@@ -59,6 +58,7 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
 
     print(f"Starting replay validation on BlenderSimulator")
     while simulationNums:
+        simulator.reset()
         simulationNumber = simulationNums.pop()
         simulationSteps = noise_vectors.pop()
         # TODO change this from max steps to actual steps
