@@ -60,13 +60,14 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
     print(f"Starting replay validation on BlenderSimulator")
     while simulationNums:
         simulationNumber = simulationNums.pop()
+        simulationSteps = noise_vectors.pop()
         # TODO change this from max steps to actual steps
-        for stepNumber in trange(steps):
+        for step in trange(len(simulationSteps)):
             # pdb.set_trace()
-            noise = noise_vectors.pop()
-            print(f"Step {stepNumber} with noise: {noise}")
+            noise = simulationSteps[step]
+            print(f"Step {step} with noise: {noise}")
             isCollision, collisionVal, currentPos = simulator.step(noise)
-            outputStepList = [simulationNumber, stepNumber]
+            outputStepList = [simulationNumber, step]
 
             # append the noises
             noiseList = noise.cpu().numpy()
