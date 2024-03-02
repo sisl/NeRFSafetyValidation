@@ -34,13 +34,20 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
         simulationNums = set()
         noise_vectors = []
         for row in reader:
-            if row[-1] == 'True':
-                # TODO: figure out how to store these properly so that it actually works
+            if row[-1] == 'TRUE':
+                step = False
                 simulationNums.add(row[0])
-                noise_vector = np.array(row[2:14], dtype=np.float32)
-                noise_vectors.append(noise_vector)
+                noises = []
+                while not step:
+                    noise_vector = np.array(row[2:14], dtype=np.float32)
+                    noises.append(noise_vector)
+                    if row[-2] == 'TRUE':
+                        step = True
+                noise_vectors.append(noises)
 
 
+    print(simulationNums)
+    print(noise_vectors)
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
     everCollided = False
@@ -86,7 +93,7 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
             #     runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
             #     break
 
-        with open("./results/collisionValuesBlender.csv", "a") as csvFile:
+        with open("./results/collisionValuesReplay.csv", "a") as csvFile:
             print(f"Noise List: {noiseList}")
             writer = csv.writer(csvFile)
             for outputStepList in outputSimulationList:
