@@ -5,6 +5,10 @@ from scipy.stats import norm
 import torch
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
+import pandas as pd
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -41,7 +45,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             for row in reader:
                 if row[-1] == 'TRUE':
                     simulationNumber = row[0]
-                    print(f"SIMULATION NUMBER {simulationNumber}")
                     while True:
                         noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                         if simulationNumber not in simulationData:
@@ -51,7 +54,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                             break
                         row = next(reader, None)  
 
-    print(simulationData)
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
     everCollided = False
@@ -92,8 +94,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             if isCollision:
                 break
 
-        with open("results/collisionValuesReplay.csv", "a") as csvFile:
-            print(f"Noise List: {noiseList}")
+        os.makedirs('results/replays', exist_ok=True)
+        with open("results/replays/collisionValuesReplay.csv", "a") as csvFile:
             writer = csv.writer(csvFile)
             for outputStepList in outputSimulationList:
                 outputStepList.append(everCollided)
@@ -106,6 +108,21 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     logLikelihoods = np.log(likelihoods)
     return logLikelihoods.sum()
 
-def createConfusionMatrix():
-    # TODO: implement
-    pass
+def createConfusionMatrix(original_csv_path, new_results_csv_path):
+    # load data
+    original_df = pd.read_csv(original_csv_path)
+    new_results_df = pd.read_csv(new_results_csv_path)
+
+    # use last 
+    y_actual = original_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
+    y_predicted = new_results_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
+
+    # create the confusion matrix
+    conf_matrix = confusion_matrix(y_actual, y_predicted)
+
+    # display confusion matrix using seaborn
+    sns.heatmap(conf_matrix, annot=True, cmap='Blues', fmt='d')
+    plt.xlabel('Predicted Labels')
+    plt.ylabel('Actual Labels')
+    plt.title('Confusion Matrix')
+    plt.show()
