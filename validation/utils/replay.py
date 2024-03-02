@@ -8,7 +8,7 @@ from validation.simulators.BlenderSimulator import BlenderSimulator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
+def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -42,7 +42,6 @@ def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cf
                     simulationNums.add(row[0])
                     noises = []
                     while True:
-                        print(device)
                         noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                         noises.append(noise_vector)
                         if row[-2] == 'TRUE':
@@ -83,7 +82,7 @@ def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cf
             outputStepList.extend(currentPos)
 
             # find and append the trajectory likelihood, both for this step and the entire trajectory
-            curLogLikelihood = trajectoryLikelihood(noiseList)
+            curLogLikelihood = trajectoryLikelihood(noiseList, noise_mean, noise_std)
             outputStepList.append(curLogLikelihood)
 
             simTrajLogLikelihood += curLogLikelihood
@@ -110,8 +109,8 @@ def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cf
                 writer.writerow(outputStepList) 
 
 
-def trajectoryLikelihood(self, noise):
+def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
-    likelihoods = norm.pdf(noise, loc = self.noise_mean_cpu, scale = self.noise_std_cpu)
+    likelihoods = norm.pdf(noise, loc = noise_mean_cpu, scale = noise_std_cpu)
     logLikelihoods = np.log(likelihoods)
     return logLikelihoods.sum()
