@@ -111,6 +111,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
 
 def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
-    likelihoods = norm.pdf(noise, loc = noise_mean_cpu, scale = noise_std_cpu)
+    likelihoods = norm.pdf(noise, loc = noise_mean_cpu.cpu().numpy(), scale = noise_std_cpu.cpu().numpy())
     logLikelihoods = np.log(likelihoods)
     return logLikelihoods.sum()
