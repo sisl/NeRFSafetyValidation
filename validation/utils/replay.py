@@ -42,8 +42,8 @@ def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cf
                     simulationNums.add(row[0])
                     noises = []
                     while True:
-                        noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32))
-                        noise_vector.to(device)
+                        print(device)
+                        noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                         noises.append(noise_vector)
                         if row[-2] == 'TRUE':
                             break
