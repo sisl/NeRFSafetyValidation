@@ -51,11 +51,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                         row = next(reader, None)  
                     noise_vectors.append(noises)
 
-            
-
-
-    print(simulationNums)
-    print(noise_vectors)
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
     everCollided = False
@@ -66,7 +61,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         simulator.reset()
         simulationNumber = simulationNums.pop()
         simulationSteps = noise_vectors.pop()
-        print(f"Replaying simulation {simulationNumber}")
+        print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps!")
         for step in trange(len(simulationSteps)):
             noise = simulationSteps[step]
             print(f"Replaying step {step} with noise: {noise}")
@@ -95,12 +90,12 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             # append the value of the step to the simulation data
             outputSimulationList.append(outputStepList)
 
-            # if isCollision:
+            if isCollision:
+                break
             #     collisions += 1
             #     stepsToCollision += stepNumber
             #     everCollided = True
             #     runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
-            #     break
 
         with open("results/collisionValuesReplay.csv", "a") as csvFile:
             print(f"Noise List: {noiseList}")
@@ -115,3 +110,6 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     likelihoods = norm.pdf(noise, loc = noise_mean_cpu.cpu().numpy(), scale = noise_std_cpu.cpu().numpy())
     logLikelihoods = np.log(likelihoods)
     return logLikelihoods.sum()
+
+def createConfusionMatrix():
+    pass
