@@ -41,7 +41,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             for row in reader:
                 if row[-1] == 'TRUE':
                     simulationNumber = row[0]
-                    print(f"SIMULATION NUMBER {row[0]}")
+                    print(f"SIMULATION NUMBER {simulationNumber}")
                     while True:
                         noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                         if simulationNumber not in simulationData:
@@ -51,6 +51,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                             break
                         row = next(reader, None)  
 
+    print(simulationData)
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
     everCollided = False
