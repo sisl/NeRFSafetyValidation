@@ -6,6 +6,8 @@ import torch
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
@@ -41,6 +43,7 @@ def replay(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cf
                     noises = []
                     while True:
                         noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32))
+                        noise_vector.to(device)
                         noises.append(noise_vector)
                         if row[-2] == 'TRUE':
                             break
