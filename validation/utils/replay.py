@@ -1,7 +1,7 @@
 import csv
 import os
 import numpy as np
-from torch import norm
+from scipy.stats import norm
 import torch
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
