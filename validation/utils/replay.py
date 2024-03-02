@@ -1,4 +1,5 @@
 import csv
+import os
 import numpy as np
 from torch import norm
 from tqdm import trange
@@ -23,7 +24,12 @@ def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, fi
         blender_cfg (dict): The configuration for Blender.
         density_fn (function): A function to get the density of a point in space.
     '''
-    with open('results/*.csv', 'r') as file:
+
+    file_list = os.listdir('results')
+    csv_file_name = next((file for file in file_list if file.lower().endswith('.csv')), None)
+    csv_file_path = os.path.join('results', csv_file_name)
+
+    with open(csv_file_path, 'r') as file:
         reader = csv.reader(file)
         simulationNums = set()
         noise_vectors = []
