@@ -4,7 +4,7 @@ from torch import norm
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
 
-def replay(csv_file, start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
+def replay(start_state, end_state, steps, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -23,12 +23,13 @@ def replay(csv_file, start_state, end_state, steps, agent_cfg, planner_cfg, came
         blender_cfg (dict): The configuration for Blender.
         density_fn (function): A function to get the density of a point in space.
     '''
-    with open(csv_file, 'r') as file:
+    with open('results/*.csv', 'r') as file:
         reader = csv.reader(file)
         simulationNums = set()
         noise_vectors = []
         for row in reader:
             if row[-1] == 'True':
+                # TODO: figure out how to store these properly so that it actually works
                 simulationNums.add(row[0])
                 noise_vector = np.array(row[2:14], dtype=np.float32)
                 noise_vectors.append(noise_vector)
@@ -42,6 +43,7 @@ def replay(csv_file, start_state, end_state, steps, agent_cfg, planner_cfg, came
     print(f"Starting replay validation on BlenderSimulator")
     while simulationNums:
         simulationNumber = simulationNums.pop()
+        # TODO change this from max steps to actual steps
         for stepNumber in trange(steps):
             # pdb.set_trace()
             noise = noise_vectors.pop()
