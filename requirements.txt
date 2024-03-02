@@ -19,3 +19,4 @@ imageio
 torchmetrics
 gym
 seaborn
+scikit-learn
