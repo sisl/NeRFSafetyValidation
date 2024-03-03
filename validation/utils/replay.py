@@ -56,12 +56,11 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
 
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     outputSimulationList = []
-    everCollided = False
-    simTrajLogLikelihood = 0
 
     print(f"Starting replay validation on BlenderSimulator")
     for simulationNumber, simulationSteps in simulationData.items():
         simulator.reset()
+        simTrajLogLikelihood = 0
         print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps!")
         for step in trange(len(simulationSteps)):
             noise = simulationSteps[step]
@@ -98,7 +97,6 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         with open("results/replays/collisionValuesReplay.csv", "a") as csvFile:
             writer = csv.writer(csvFile)
             for outputStepList in outputSimulationList:
-                outputStepList.append(everCollided)
                 writer.writerow(outputStepList) 
 
 
