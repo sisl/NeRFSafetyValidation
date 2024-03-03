@@ -33,6 +33,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         density_fn (function): A function to get the density of a point in space.
     '''
 
+    # read from csv resulting from simulations
     file_list = os.listdir('results')
     csv_file_name = next((file for file in file_list if file.lower().endswith('.csv')), None)
 
@@ -54,8 +55,12 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                             break
                         row = next(reader, None)  
 
-    simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    # clear existing csv
+    if os.path.exists("results/replays/collisionValuesReplay.csv"):
+        os.remove("results/replays/collisionValuesReplay.csv")
 
+    # run replay validation
+    simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
     print(f"Starting replay validation on BlenderSimulator")
     for simulationNumber, simulationSteps in simulationData.items():
         simulator.reset()
@@ -114,7 +119,7 @@ def createConfusionMatrix(original_csv_path, new_results_csv_path):
     original_df = pd.read_csv(original_csv_path)
     new_results_df = pd.read_csv(new_results_csv_path)
 
-    # use last 
+    # use last entry
     y_actual = original_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
     y_predicted = new_results_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
 
