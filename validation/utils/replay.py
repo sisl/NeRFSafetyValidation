@@ -94,7 +94,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 break
 
         os.makedirs('results/replays', exist_ok=True)
-        with open("results/replays/collisionValuesReplay.csv", "a") as csvFile:
+        with open("results/replays/collisionValuesReplay.csv", "w") as csvFile:
             writer = csv.writer(csvFile)
             for outputStepList in outputSimulationList:
                 writer.writerow(outputStepList) 
