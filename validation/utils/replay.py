@@ -40,6 +40,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
     if csv_file_name:
         csv_file_path = os.path.join('results', csv_file_name)
         simulationData = {}
+        simulationResult = {}
 
         with open(csv_file_path, 'r') as file:
             reader = csv.reader(file)
@@ -48,11 +49,16 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                 if simulationNumber not in simulationData:
                     simulationData[simulationNumber] = []
+                    simulationResult[simulationNumber] = [row[-2], row[-1]]
                 simulationData[simulationNumber].append(noise_vector)
 
     # clear existing csv
     if os.path.exists("results/replays/collisionValuesReplay.csv"):
         os.remove("results/replays/collisionValuesReplay.csv")
+
+    # counts
+    tp_count_step, tn_count_step, fp_count_step, fn_count_step = 0, 0, 0, 0
+    tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = 0, 0, 0, 0
 
     # run replay validation
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
@@ -91,9 +97,24 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             # append the value of the step to the simulation data
             outputSimulationList.append(outputStepList)
 
+            # count by step
+            nerf_condition = simulationResult[simulationNumber][0]
+            tp_count_step += isCollision and nerf_condition
+            fn_count_step += isCollision and not nerf_condition
+            fp_count_step += not isCollision and nerf_condition
+            tn_count_step += not isCollision and not nerf_condition
+
             if isCollision:
                 everCollided = True
+                # TODO: count the remaining steps after collision?
                 break
+
+        # count by simulation
+        nerf_traj_condition = simulationResult[simulationNumber][1]
+        tp_count_traj += everCollided and nerf_traj_condition
+        fn_count_traj += everCollided and not nerf_traj_condition
+        fp_count_traj += not everCollided and nerf_traj_condition
+        tn_count_traj += not everCollided and not nerf_traj_condition
 
         os.makedirs('results/replays', exist_ok=True)
         with open("results/replays/collisionValuesReplay.csv", "a") as csvFile:
@@ -102,6 +123,9 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 outputStepList.append(everCollided)
                 writer.writerow(outputStepList) 
 
+        createConfusionMatrix(tp_count_step, tn_count_step, fp_count_step, fn_count_step, "step")
+        createConfusionMatrix(tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj, "traj")
+
 
 def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
@@ -109,21 +133,14 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     logLikelihoods = np.log(likelihoods)
     return logLikelihoods.sum()
 
-def createConfusionMatrix(original_csv_path, new_results_csv_path):
-    # load data
-    original_df = pd.read_csv(original_csv_path)
-    new_results_df = pd.read_csv(new_results_csv_path)
-
-    # use last entry
-    y_actual = original_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
-    y_predicted = new_results_df.iloc[:, -1] == 'TRUE'  # Convert to boolean
-
-    # create the confusion matrix
-    conf_matrix = confusion_matrix(y_actual, y_predicted)
+def createConfusionMatrix(tp, tn, fp, fn, name):
+    # load data into numpy array
+    conf_matrix = np.array([[tn, fp], [fn, tp]])
 
     # display confusion matrix using seaborn
     sns.heatmap(conf_matrix, annot=True, cmap='Blues', fmt='d')
     plt.xlabel('Predicted Labels')
     plt.ylabel('Actual Labels')
     plt.title('Confusion Matrix')
+    plt.savefig(f'results/confusion_matrix_{name}.png')
     plt.show()
