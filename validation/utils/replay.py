@@ -105,7 +105,9 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
 
             if isCollision:
                 everCollided = True
-                # TODO: count the remaining steps after collision?
+                # count the remaining steps after collision as false negatives
+                remaining_steps = len(simulationSteps) - step - 1
+                fn_count_step += remaining_steps
                 break
 
         # count by simulation
@@ -140,8 +142,8 @@ def createConfusionMatrix(tp, tn, fp, fn, name):
 
     # display confusion matrix using seaborn
     sns.heatmap(conf_matrix_df, annot=True, cmap='Blues', fmt='d')
-    plt.xlabel('Blender Simulator')
-    plt.ylabel('NeRF Simulator')
+    plt.xlabel('Blender Simulator Collision')
+    plt.ylabel('NeRF Simulator Collision')
     plt.title(f'Confusion Matrix ({name})')
     plt.savefig(f'results/confusion_matrix_{name}.png')
     plt.show()
