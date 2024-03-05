@@ -134,13 +134,15 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
     return logLikelihoods.sum()
 
 def createConfusionMatrix(tp, tn, fp, fn, name):
+    plt.close('all')
     # load data into numpy array
     conf_matrix = np.array([[tn, fp], [fn, tp]])
+    conf_matrix_df = pd.DataFrame(conf_matrix, columns=['False', 'True'], index=['False', 'True'])
 
     # display confusion matrix using seaborn
-    sns.heatmap(conf_matrix, annot=True, cmap='Blues', fmt='d')
-    plt.xlabel('Predicted Labels')
-    plt.ylabel('Actual Labels')
-    plt.title('Confusion Matrix')
+    sns.heatmap(conf_matrix_df, annot=True, cmap='Blues', fmt='d')
+    plt.xlabel('Blender Simulator')
+    plt.ylabel('NeRF Simulator')
+    plt.title(f'Confusion Matrix ({name})')
     plt.savefig(f'results/confusion_matrix_{name}.png')
     plt.show()
