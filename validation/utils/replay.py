@@ -6,7 +6,6 @@ import torch
 from tqdm import trange
 from validation.simulators.BlenderSimulator import BlenderSimulator
 import pandas as pd
-from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -100,8 +99,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             # count by step
             nerf_condition = True if simulationResult[simulationNumber][0] == "TRUE" else False
             tp_count_step += isCollision and nerf_condition
-            fn_count_step += isCollision and not nerf_condition
-            fp_count_step += not isCollision and nerf_condition
+            fp_count_step += isCollision and not nerf_condition
+            fn_count_step += not isCollision and nerf_condition
             tn_count_step += not isCollision and not nerf_condition
 
             if isCollision:
@@ -112,8 +111,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
         # count by simulation
         nerf_traj_condition = True if simulationResult[simulationNumber][1] == "TRUE" else False
         tp_count_traj += everCollided and nerf_traj_condition
-        fn_count_traj += everCollided and not nerf_traj_condition
-        fp_count_traj += not everCollided and nerf_traj_condition
+        fp_count_traj += everCollided and not nerf_traj_condition
+        fn_count_traj += not everCollided and nerf_traj_condition
         tn_count_traj += not everCollided and not nerf_traj_condition
 
         os.makedirs('results/replays', exist_ok=True)
