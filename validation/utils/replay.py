@@ -111,7 +111,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 remaining_steps = len(simulationSteps) - step - 1
                 fn_count_step += remaining_steps
                 break
-        runBlenderOnFailure(blend_file, workspace, simulationNumber, simulationSteps[-1])
+        runBlenderOnFailure(blend_file, workspace, simulationNumber, len(simulationSteps)-1)
 
 
         # count by simulation
