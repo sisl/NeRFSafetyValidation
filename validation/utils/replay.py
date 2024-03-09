@@ -13,7 +13,7 @@ from validation.utils.blenderUtils import runBlenderOnFailure
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace):
+def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -62,7 +62,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
     tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = 0, 0, 0, 0
 
     # run replay validation
-    simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn)
+    simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed)
     print(f"Starting replay validation on BlenderSimulator")
     for simulationNumber, simulationSteps in simulationData.items():
         simulator.reset()
