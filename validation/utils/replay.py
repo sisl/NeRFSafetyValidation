@@ -143,7 +143,7 @@ def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
 def createConfusionMatrix(tp, tn, fp, fn, name):
     plt.close('all')
     # load data into numpy array
-    conf_matrix = np.array([[tn, fp], [fn, tp]])
+    conf_matrix = np.array([[tn, fn], [fp, tp]])
     conf_matrix_df = pd.DataFrame(conf_matrix, columns=['False', 'True'], index=['False', 'True'])
 
     # display confusion matrix using seaborn
