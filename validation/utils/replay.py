@@ -117,7 +117,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             runBlenderOnFailure(blend_file, workspace, simulationNumber, len(simulationSteps)-1)
 
         # count by simulation
-        nerf_traj_condition = True if simulationResult[simulationNumber][0][1] == "TRUE" else False
+        nerf_traj_condition = True if simulationResult[simulationNumber][-1][1] == "TRUE" else False
         tp_count_traj += everCollided and nerf_traj_condition
         fp_count_traj += everCollided and not nerf_traj_condition
         fn_count_traj += not everCollided and nerf_traj_condition
