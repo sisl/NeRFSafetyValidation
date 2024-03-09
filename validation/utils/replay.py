@@ -130,8 +130,8 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 outputStepList.append(everCollided)
                 writer.writerow(outputStepList) 
 
-        createConfusionMatrix(tp_count_step, tn_count_step, fp_count_step, fn_count_step, "step")
-        createConfusionMatrix(tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj, "traj")
+    createConfusionMatrix(tp_count_step, tn_count_step, fp_count_step, fn_count_step, "step")
+    createConfusionMatrix(tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj, "traj")
 
 
 def trajectoryLikelihood(noise, noise_mean_cpu, noise_std_cpu):
