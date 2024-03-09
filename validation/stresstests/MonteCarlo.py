@@ -23,6 +23,7 @@ class MonteCarlo(object):
         # self.steps = 2
         self.blend_file = blend_file
         self.workspace = workspace
+        self.noise_seed = torch.Generator(device=device)
 
     def trajectoryLikelihood(self, noise):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
@@ -42,7 +43,7 @@ class MonteCarlo(object):
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
                 # pdb.set_trace()
-                noise = torch.normal(self.noise_mean, self.noise_std)
+                noise = torch.normal(self.noise_mean, self.noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
                 isCollision, collisionVal, currentPos = self.simulator.step(noise)
                 outputStepList = [simulationNumber, stepNumber]

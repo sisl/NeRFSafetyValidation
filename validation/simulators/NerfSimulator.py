@@ -8,6 +8,7 @@ from gym.spaces import Box
 import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
+from nerf.utils import seed_everything
 from validation.utils.blenderUtils import stateToGridCoord
 from validation.utils.fileUtils import cache_poses, restore_poses
 from validation.utils.blenderUtils import worldToIndex, indexToWorld
@@ -17,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class NerfSimulator(gym.Env):
     """Class template for safety validation."""
 
-    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn):
+    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed):
         super(NerfSimulator, self).__init__()
 
         self.action_space = None # TODO: Define disturbance vector here
@@ -56,6 +57,7 @@ class NerfSimulator(gym.Env):
         self.START_Z = -0.1
         self.END_Z = 0.5
         self.sdf = np.load("validation/utils/sdf.npy")
+        self.seed = seed
 
 
     def step(self, disturbance, num_interpolated_points=2):
@@ -153,6 +155,7 @@ class NerfSimulator(gym.Env):
         self.basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
         cache_flag = os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json")
         self.clear_workspace()
+        seed_everything(self.seed)
         self.iter = 0
 
         # Reinitialize dynamics
