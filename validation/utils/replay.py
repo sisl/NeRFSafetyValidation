@@ -50,8 +50,9 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                 if simulationNumber not in simulationData:
                     simulationData[simulationNumber] = []
-                    simulationResult[simulationNumber] = [row[-2], row[-1]]
+                    simulationResult[simulationNumber] = [[row[-2], row[-1]]]
                 simulationData[simulationNumber].append(noise_vector)
+                simulationResult[simulationNumber].append([row[-2], row[-1]])
 
     # clear existing csv
     if os.path.exists("results/replays/collisionValuesReplay.csv"):
@@ -99,7 +100,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             outputSimulationList.append(outputStepList)
 
             # count by step
-            nerf_condition = True if simulationResult[simulationNumber][0] == "TRUE" else False
+            nerf_condition = True if simulationResult[simulationNumber][step][0] == "TRUE" else False
             tp_count_step += isCollision and nerf_condition
             fp_count_step += isCollision and not nerf_condition
             fn_count_step += not isCollision and nerf_condition
@@ -116,7 +117,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             runBlenderOnFailure(blend_file, workspace, simulationNumber, len(simulationSteps)-1)
 
         # count by simulation
-        nerf_traj_condition = True if simulationResult[simulationNumber][1] == "TRUE" else False
+        nerf_traj_condition = True if simulationResult[simulationNumber][0][1] == "TRUE" else False
         tp_count_traj += everCollided and nerf_traj_condition
         fp_count_traj += everCollided and not nerf_traj_condition
         fn_count_traj += not everCollided and nerf_traj_condition
