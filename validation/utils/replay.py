@@ -50,7 +50,7 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
                 noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                 if simulationNumber not in simulationData:
                     simulationData[simulationNumber] = []
-                    simulationResult[simulationNumber] = [[row[-2], row[-1]]]
+                    simulationResult[simulationNumber] = []
                 simulationData[simulationNumber].append(noise_vector)
                 simulationResult[simulationNumber].append([row[-2], row[-1]])
 
