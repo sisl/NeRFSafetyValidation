@@ -106,15 +106,13 @@ def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg
             fp_count_step += not isCollision and nerf_condition
             tn_count_step += not isCollision and not nerf_condition
 
-            if isCollision:
+            if isCollision or nerf_condition:
                 everCollided = True
                 # count the remaining steps after collision as false negatives
                 remaining_steps = len(simulationSteps) - step - 1
                 runBlenderOnFailure(blend_file, workspace, simulationNumber, step)
                 fn_count_step += remaining_steps
                 break
-        if not everCollided:
-            runBlenderOnFailure(blend_file, workspace, simulationNumber, len(simulationSteps)-1)
 
         # count by simulation
         nerf_traj_condition = True if simulationResult[simulationNumber][-1][1].upper() == "TRUE" else False
