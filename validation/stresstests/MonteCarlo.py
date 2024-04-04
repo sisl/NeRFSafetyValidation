@@ -90,7 +90,7 @@ class MonteCarlo(object):
             21: did we collide on this simulation (added post facto)
             
             '''
-            with open("./results/collisionValuesBlenderMC_n100.csv", "a") as csvFile:
+            with open(f'./results/collisionValuesBlenderMC_n{self.n_simulations}.csv', "a") as csvFile:
                 print(f"Noise List: {noiseList}")
                 writer = csv.writer(csvFile)
                 for outputStepList in outputSimulationList:
