@@ -20,7 +20,6 @@ class MonteCarlo(object):
         self.noise_mean_cpu = noise_mean.cpu().numpy() # change this, local cpu version that plays nice with norm.pdf. Perhaps a torch native pdf would be faster
         self.noise_std_cpu = noise_std.cpu().numpy() # change this, see above
         self.steps = steps
-        # self.steps = 2
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = torch.Generator(device=device)

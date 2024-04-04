@@ -1,6 +1,5 @@
 import bpy
 import sys, os
-from mathutils import Matrix, Vector
 import numpy as np
 import json
 import glob

@@ -2,7 +2,6 @@ import csv
 import torch
 from torch.distributions import MultivariateNormal
 import numpy as np
-from scipy.stats import norm
 from scipy.special import logsumexp
 from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns

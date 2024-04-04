@@ -9,9 +9,8 @@ import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from nerf.utils import seed_everything
-from validation.utils.blenderUtils import stateToGridCoord
 from validation.utils.fileUtils import cache_poses, restore_poses
-from validation.utils.blenderUtils import worldToIndex, indexToWorld
+from validation.utils.blenderUtils import worldToIndex
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,8 +20,8 @@ class BlenderSimulator(gym.Env):
     def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed):
         super(BlenderSimulator, self).__init__()
 
-        self.action_space = None # TODO: Define disturbance vector here
-        self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800) TODO: change this to the state vector
+        self.action_space = Box(low=-np.inf, high=np.inf, shape=(12,), dtype=np.float32)  # 12-dimensional disturbance vector
+        self.observation_space = Box(low=0, high=255, shape=(800, 800, 3), dtype=np.uint8)  # RGB image of size (800, 800)
         self.planner_cfg = planner_cfg
         self.start_state = start_state
         self.end_state = end_state
@@ -61,12 +60,17 @@ class BlenderSimulator(gym.Env):
 
     def step(self, disturbance, num_interpolated_points=2):
         """
-        Run one timestep of the environment's dynamics.
+        Run one timestep of the environment's dynamics. The agent performs the action recommended by the planner,
+        subject to the provided disturbance. The function also checks for collisions and updates the state estimate.
+
+        Args:
+            disturbance (np.array): The disturbance vector, a 12-dimensional vector representing the disturbance.
+            num_interpolated_points (int, optional): The number of interpolated points for linear interpolation on states. Defaults to 2.
+
         Returns:
-            observation (object): agent's observation of the current environment.
-            reward (float) : amount of reward returned after previous action.
-            done (bool): whether the episode has ended, in which case further step() calls will return undefined results.
-            info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
+            collided (bool): Whether the drone collided during the step.
+            collisionVal (float): The value at the collision (sdf).
+            current_state[:3] (np.array): The position during collision.
         """
         try:
             # In MPC style, take the next action recommended from the planner
@@ -136,9 +140,7 @@ class BlenderSimulator(gym.Env):
 
     def reset(self):
         """
-        Resets the state of the environment and returns an initial observation.
-        Returns:
-            observation (object): the initial observation.
+        Resets the state of the environment.
         """
         self.basefolder = "paths" / pathlib.Path(self.planner_cfg['exp_name'])
         cache_flag = os.path.exists(self.basefolder / pathlib.Path("init_poses") / "0.json")
@@ -179,7 +181,9 @@ class BlenderSimulator(gym.Env):
 
 
     def clear_workspace(self):
-        """Clears the workspace directory."""
+        """
+        Clears the workspace directory.
+        """
         if self.basefolder.exists():
             print(self.basefolder, "already exists!")
             shutil.rmtree(self.basefolder)

@@ -33,7 +33,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
         p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]
         cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, blend_file, opt.workspace)
-        means, covs, q, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
+        cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")
         exit()
@@ -271,10 +271,9 @@ if __name__ == "__main__":
         print(f"Unrecognized simulator {simulator_cfg}")
         exit()
   
-    # TODO: configure disturbances
+    # noises are sampled from means and standard deviations in envConfig.json
     noise_std = extra_cfg['mpc_noise_std']
     noise_mean = extra_cfg['mpc_noise_mean']
-    # noise = torch.normal(noise_mean, noise_std)
 
     if opt.r:
         replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed)
