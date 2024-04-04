@@ -251,6 +251,7 @@ if __name__ == "__main__":
 
     simulator_cfg = envConfig["simulator"]
     n_simulations = envConfig["n_simulations"]
+    stress_test = envConfig["stress_test"]
 
     ### NeRF Configs ###
     # Querying the density (for the planner)
@@ -279,7 +280,7 @@ if __name__ == "__main__":
         replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed)
     else:
         # Main loop
-        validate(simulator, "Cross Entropy Method", noise_mean, noise_std, n_simulations)
+        validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')

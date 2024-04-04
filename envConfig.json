@@ -1,5 +1,6 @@
 {
   "simulator" : "NerfSimulator",
+  "stress_test" : "Monte Carlo",
   "n_simulations" : 100,
   "estimator_cfg": {
     "dil_iter": 3,
