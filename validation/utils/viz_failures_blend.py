@@ -20,9 +20,6 @@ if __name__ == "__main__":
     step = argv[3]
     simulationList = argv[4]
 
-    simulationList = json.loads(simulationList) # convert JSON string into list of lists
-    print(simulationList)
-
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
     project = bpy.data.collections.new(f'{exp_name}_visualization')
@@ -94,10 +91,13 @@ if __name__ == "__main__":
         replan_plan = poses2loc(replan_plan)
         add_curve(project, replan_plan, time_step=time_step, bevel_depth=0.02)
         time_step += 1
+
+    simulationList = json.loads(simulationList) # convert JSON string into list of lists
     
-    # bounding box representing drone location at timestep of failure
-    last_location = replan_plan[1]
-    add_cube(project, last_location)
+    # bounding boxes representing drone locations at all timesteps including failure
+    for step in simulationList:
+        location = step[15:18]    
+        add_cube(project, location)
 
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
