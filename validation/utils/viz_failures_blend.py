@@ -21,12 +21,7 @@ if __name__ == "__main__":
     simulationList = argv[4]
 
 
-    if simulationList is not None and len(simulationList) > 0:
-        simulationList = ' '.join(map(str, simulationList))
-    else:
-        simulationList = ''
-
-    print(simulationList)
+    simulationList = json.loads(simulationList) # convert JSON string into list of lists
 
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
