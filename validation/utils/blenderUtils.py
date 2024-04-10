@@ -2,6 +2,8 @@ import subprocess
 import numpy as np
 import json
 
+from validation.utils.NumpyEncoder import NumpyEncoder
+
 # take in a state vector and output the grid coordinate
 # taken from nav/quad_plot.py
 def stateToGridCoord(state):
@@ -18,7 +20,7 @@ def indexToWorld(index, start, granularity):
 
 def runBlenderOnFailure(blend_file, workspace, n_sim, step, outputSimulationList):
     bevel_depth = 0.02      # Size of the curve visualized in blender
-    outputSimulationList = json.dumps(outputSimulationList)  # convert list of lists to a JSON string
+    outputSimulationList = json.dumps(outputSimulationList, cls=NumpyEncoder)  # convert list of lists to a JSON string
     subprocess.run(['blender', blend_file, '-P', 'validation/utils/viz_failures_blend.py', '--background', '--', workspace, str(bevel_depth), str(n_sim), str(step), outputSimulationList])
 
 # You can call the function like this:
