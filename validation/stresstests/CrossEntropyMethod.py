@@ -127,7 +127,7 @@ class CrossEntropyMethod:
                         self.stepsToCollision += stepNumber
                         everCollided = True
                         if not self.TOY_PROBLEM:
-                            runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
+                            runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber, outputSimulationList)
                         break
                 
                 if self.TOY_PROBLEM:

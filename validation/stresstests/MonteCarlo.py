@@ -73,7 +73,7 @@ class MonteCarlo(object):
                     self.collisions += 1
                     self.stepsToCollision += stepNumber
                     everCollided = True
-                    runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber)
+                    runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber, outputSimulationList)
                     break
            
             '''

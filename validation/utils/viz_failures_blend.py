@@ -18,6 +18,15 @@ if __name__ == "__main__":
     bevel_depth = argv[1]
     n_sim = argv[2]
     step = argv[3]
+    simulationList = argv[4]
+
+
+    if simulationList is not None and len(simulationList) > 0:
+        simulationList = ' '.join(map(str, simulationList))
+    else:
+        simulationList = ''
+
+    print(simulationList)
 
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
