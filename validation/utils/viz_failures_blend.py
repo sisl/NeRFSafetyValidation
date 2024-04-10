@@ -20,8 +20,8 @@ if __name__ == "__main__":
     step = argv[3]
     simulationList = argv[4]
 
-
     simulationList = json.loads(simulationList) # convert JSON string into list of lists
+    print(simulationList)
 
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
