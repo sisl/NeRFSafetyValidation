@@ -95,8 +95,8 @@ if __name__ == "__main__":
     simulationList = json.loads(simulationList) # convert JSON string into list of lists
     
     # bounding boxes representing drone locations at all timesteps including failure
-    for step in simulationList:
-        location = step[15:18]    
+    for stepList in simulationList:
+        location = stepList[15:18]    
         add_cube(project, location)
 
     # save the Blender file
