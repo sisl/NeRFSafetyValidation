@@ -59,14 +59,14 @@ class NerfSimulator(gym.Env):
         self.seed = seed
 
 
-    def step(self, disturbance, num_interpolated_points=8):
+    def step(self, disturbance, num_interpolated_points=4):
         """
         Run one timestep of the environment's dynamics. The agent performs the action recommended by the planner,
         subject to the provided disturbance. The function also checks for collisions and updates the state estimate.
 
         Args:
             disturbance (np.array): The disturbance vector, a 12-dimensional vector representing the disturbance.
-            num_interpolated_points (int, optional): The number of interpolated points for linear interpolation on states. Defaults to 8.
+            num_interpolated_points (int, optional): The number of interpolated points for linear interpolation on states. Defaults to 4.
 
         Returns:
             collided (bool): Whether the drone collided during the step.
