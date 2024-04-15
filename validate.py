@@ -1,7 +1,6 @@
 import subprocess
 import numpy as np
 import torch
-from torch.distributions import MultivariateNormal
 import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset

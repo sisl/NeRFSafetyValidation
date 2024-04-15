@@ -5,7 +5,7 @@ class SeedableMultivariateNormal:
         self.means = means
         self.covs = covs
         self.noise_seed = noise_seed
-        self.distributions = [torch.distributions.MultivariateNormal(mean, cov) for mean, cov in zip(means, covs)]
+        self.distributions = [torch.distributions.MultivariateNormal(means, covs) for _ in range(len(means))]
 
     def sample(self):
         if self.noise_seed is not None:
