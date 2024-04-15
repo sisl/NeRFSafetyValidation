@@ -6,6 +6,7 @@ import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
+from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
 from validation.simulators.NerfSimulator import NerfSimulator
 from validation.simulators.BlenderSimulator import BlenderSimulator
 from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
@@ -29,10 +30,11 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         noise_covQ = torch.square(torch.diag(torch.tensor(noise_std)))
         noise_meanP = torch.tensor(noise_mean)
         noise_covP = torch.square(torch.diag(torch.tensor(noise_std)))
+        noise_seed = torch.Generator(device=device)
 
-        q = [MultivariateNormal(noise_meanQ, noise_covQ) for _ in range(12)]
-        p = [MultivariateNormal(noise_meanP, noise_covP) for _ in range(12)]
-        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, blend_file, opt.workspace)
+        q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
+        p = SeedableMultivariateNormal(noise_meanP, noise_covP, noise_seed=noise_seed)
+        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, noise_seed, blend_file, opt.workspace)
         cem.optimize()
     else:
         print(f"Unrecognized stress test {stresstest}")

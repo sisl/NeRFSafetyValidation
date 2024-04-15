@@ -1,8 +1,8 @@
 import csv
 import torch
-from torch.distributions import MultivariateNormal
 import numpy as np
 from scipy.special import logsumexp
+from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
 from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ import pdb
 from validation.utils.mathUtils import is_positive_definite
 
 class CrossEntropyMethod:
-    def __init__(self, simulator, q, p, m, m_elite, kmax, blend_file, workspace):
+    def __init__(self, simulator, q, p, m, m_elite, kmax, noise_seed, blend_file, workspace):
         """
         Initialize the CrossEntropyMethod class.
 
@@ -36,6 +36,7 @@ class CrossEntropyMethod:
         self.stepsToCollision = 0
         self.blend_file = blend_file
         self.workspace = workspace
+        self.noise_seed = noise_seed
 
         self.TOY_PROBLEM = False
 
@@ -69,9 +70,8 @@ class CrossEntropyMethod:
                 plt.figure()
             
             for simulationNumber in range(self.m):
-                # ONE SIMULATION BELOW
                 self.simulator.reset()
-                noises = [self.q[stepNumber].sample() for stepNumber in range(12)] # precompute noise values
+                noises = self.q.sample()
                 trajectory = [noise.cpu().numpy() for noise in noises]
                 outputSimulationList = []
 
@@ -87,7 +87,6 @@ class CrossEntropyMethod:
 
                 for stepNumber in range(12):
                     outputStepList = [k, simulationNumber, stepNumber] # what will be written to the CSV
-                    # noise = self.q[stepNumber].sample()
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
 
@@ -102,8 +101,8 @@ class CrossEntropyMethod:
                     outputStepList.extend(currentPos)
 
                     # output the probability of the noise under p and q
-                    pStep = self.p[stepNumber].log_prob(noises[stepNumber])
-                    qStep = self.q[stepNumber].log_prob(noises[stepNumber])
+                    pStep = self.p.log_prob(noises)[stepNumber]
+                    qStep = self.q.log_prob(noises)[stepNumber]
 
                     pCumulative += pStep
                     qCumulative += qStep
@@ -178,16 +177,14 @@ class CrossEntropyMethod:
             # compute the weights
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
-                weights[i] = torch.exp(self.p[i].log_prob(elite_samples[:, i]) - self.q[i].log_prob(elite_samples[:, i]))
-                print(f"Likelihood of step {i} of elite samples under p: {self.p[i].log_prob(elite_samples[:, i]).mean()}")
+                weights = torch.exp(self.p.log_prob(elite_samples) - self.q.log_prob(elite_samples))
+                print(f"Likelihood of step {i} of elite samples under p: {self.p.log_prob(elite_samples)[i].mean()}")
                 # normalize the weights
                 log_weights = np.log(weights[i].cpu())
                 weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
-                
 
                 # update proposal distribution based on elite samples
                 mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-                # pdb.set_trace()
 
                 cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
 
@@ -196,7 +193,7 @@ class CrossEntropyMethod:
                 if (diag > 0.1).any() or (diag < 0).any():
                     print(f"Step {i} in population {k} has a covariance matrix with a diagonal that is too large or negative! Clamping between 0 and 0.1...")
                     diag = torch.clamp(diag, 0, 0.1)
-                
+
                 cov = torch.diag(diag)
 
                 self.means[i] = mean
@@ -205,10 +202,9 @@ class CrossEntropyMethod:
                 # check is cov is PD
                 print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
                 try:
-                    self.q[i] = MultivariateNormal(mean, cov)
+                    self.q = SeedableMultivariateNormal(self.means, self.covs, noise_seed=self.noise_seed)
                 except ValueError:
                     # may occur if f is improperly specified
-                    # pdb.set_trace()
                     print(mean, cov)
                     print(f"Highly improbable weights at step {i} in population {k}! Exiting...")
 
@@ -223,7 +219,7 @@ class CrossEntropyMethod:
                 plt.ylabel('Density')
                 plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
                 plt.close()
-            
+
             if zeroedWeight:
                 break
 
@@ -231,6 +227,7 @@ class CrossEntropyMethod:
             print(f"Updated Proposal Distribution:")
             for i in range(12):
                 print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
+
 
 
         # plot the population and elite scores
@@ -262,7 +259,7 @@ class CrossEntropyMethod:
             best_solutionMean = self.means[i]
             best_solutionCov = self.covs[i]
 
-            dist = MultivariateNormal(best_solutionMean, best_solutionCov)
+            dist = SeedableMultivariateNormal(best_solutionMean, best_solutionCov, noise_seed=self.noise_seed)
 
             noise = dist.sample()
             print(f"Step {stepNumber} with noise: {noise}")
