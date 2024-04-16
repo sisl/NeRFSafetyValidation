@@ -1,6 +1,15 @@
 import torch
 
 class SeedableMultivariateNormal:
+    """
+    This class represents a multivariate normal distribution that can be seeded for reproducibility.
+    
+    Attributes:
+        means (Tensor): The means of the multivariate normal distributions.
+        covs (Tensor): The covariance matrices of the multivariate normal distributions.
+        noise_seed (int, optional): The seed for the random number generator. If provided, it ensures that the samples generated are reproducible.
+        distributions (list): A list of MultivariateNormal distributions initialized with the provided means and covariances.
+    """
     def __init__(self, means, covs, noise_seed=None):
         self.means = means
         self.covs = covs

@@ -172,45 +172,34 @@ class CrossEntropyMethod:
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
 
-            weights = [0] * 12 # each step in each elite sample carries a weight
+            # weights = [0] * 12 # each step in each elite sample carries a weight
 
             # compute the weights
+            weights = torch.exp(self.p.log_prob(elite_samples) - self.q.log_prob(elite_samples))
+            # print(f"Likelihood of step {i} of elite samples under p: {self.p.log_prob(elite_samples)[i].mean()}")
+            
+            # normalize the weights
+            log_weights = np.log(weights.cpu())
+            weights = np.exp(log_weights - logsumexp(log_weights, dim=1)).cuda()
+
+            # update proposal distribution based on elite samples
+            means = weights @ elite_samples # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
+            covs = torch.cov(elite_samples, rowvar=False, aweights=weights)
+
+            # only keep the diagonal of the covariance matrix 
+            diag = covs.diag()
+            if (diag > 0.1).any() or (diag < 0).any():
+                print(f"Covariance matrix has a diagonal that is too large or negative! Clamping between 0 and 0.1...")
+                diag = torch.clamp(diag, 0, 0.1)
+
+            covs = torch.diag(diag)
+
+            self.means[i] = means
+            self.covs[i] = covs
+
             for i in range(12):
-                # compute the weights for the i-th step in each elite sample
-                weights = torch.exp(self.p.log_prob(elite_samples) - self.q.log_prob(elite_samples))
-                print(f"Likelihood of step {i} of elite samples under p: {self.p.log_prob(elite_samples)[i].mean()}")
-                # normalize the weights
-                log_weights = np.log(weights[i].cpu())
-                weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
-
-                # update proposal distribution based on elite samples
-                mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-
-                cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
-
-                # only keep the diagonal of the covariance matrix 
-                diag = cov.diag()
-                if (diag > 0.1).any() or (diag < 0).any():
-                    print(f"Step {i} in population {k} has a covariance matrix with a diagonal that is too large or negative! Clamping between 0 and 0.1...")
-                    diag = torch.clamp(diag, 0, 0.1)
-
-                cov = torch.diag(diag)
-
-                self.means[i] = mean
-                self.covs[i] = cov
-
-                # check is cov is PD
-                print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
-                try:
-                    self.q = SeedableMultivariateNormal(self.means, self.covs, noise_seed=self.noise_seed)
-                except ValueError:
-                    # may occur if f is improperly specified
-                    print(mean, cov)
-                    print(f"Highly improbable weights at step {i} in population {k}! Exiting...")
-
-                    zeroedWeight = True
-                    break
-
+                # check if covs are PD
+                print("Covariance matrix is positive definite: " + str(is_positive_definite(covs[i])))
                 plt.figure()
                 for sample in population:
                     sns.histplot(sample[i], kde=True, bins=30)
@@ -219,6 +208,15 @@ class CrossEntropyMethod:
                 plt.ylabel('Density')
                 plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
                 plt.close()
+            
+            try:
+                self.q = SeedableMultivariateNormal(means, covs, noise_seed=self.noise_seed)
+            except ValueError:
+                # may occur if f is improperly specified
+                print(means, covs)
+                print(f"Highly improbable weights! Exiting...")
+                zeroedWeight = True
+                break
 
             if zeroedWeight:
                 break
@@ -231,7 +229,6 @@ class CrossEntropyMethod:
 
 
         # plot the population and elite scores
-
         plt.figure()
         plt.plot(populationScores)
         plt.plot(eliteScores)
@@ -242,7 +239,6 @@ class CrossEntropyMethod:
         plt.ylabel("Average Score")
         plt.savefig(f"./results/pltpaths/populationScores.png")
         plt.close()
-
 
 
         print("===FINISHED OPTIMIZATION===")
