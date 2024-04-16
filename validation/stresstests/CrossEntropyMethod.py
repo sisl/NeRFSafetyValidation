@@ -70,6 +70,7 @@ class CrossEntropyMethod:
                 plt.figure()
             
             for simulationNumber in range(self.m):
+                # ONE SIMULATION BELOW
                 self.simulator.reset()
                 noises = self.q.sample()
                 trajectory = [noise.cpu().numpy() for noise in noises]
@@ -87,6 +88,7 @@ class CrossEntropyMethod:
 
                 for stepNumber in range(12):
                     outputStepList = [k, simulationNumber, stepNumber] # what will be written to the CSV
+                    # noise = self.q[stepNumber].sample()
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
 
@@ -101,8 +103,8 @@ class CrossEntropyMethod:
                     outputStepList.extend(currentPos)
 
                     # output the probability of the noise under p and q
-                    pStep = self.p.log_prob(noises)[stepNumber]
-                    qStep = self.q.log_prob(noises)[stepNumber]
+                    pStep = self.p.distributions[stepNumber].log_prob(noises[stepNumber])
+                    qStep = self.q.distributions[stepNumber].log_prob(noises[stepNumber])
 
                     pCumulative += pStep
                     qCumulative += qStep
@@ -172,33 +174,48 @@ class CrossEntropyMethod:
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
 
-            # weights = [0] * 12 # each step in each elite sample carries a weight
+            weights = [0] * 12 # each step in each elite sample carries a weight
 
             # compute the weights
-            weights = torch.exp(self.p.log_prob(elite_samples) - self.q.log_prob(elite_samples))
-            # print(f"Likelihood of step {i} of elite samples under p: {self.p.log_prob(elite_samples)[i].mean()}")
-            
-            # normalize the weights
-            log_weights = np.log(weights.cpu())
-            weights = np.exp(log_weights - logsumexp(log_weights)).cuda()
-
-            # update proposal distribution based on elite samples
-            means = weights @ elite_samples # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-            # covs = torch.cov(elite_samples.T, aweights=weights)
-            covs = []
             for i in range(12):
-                cov = torch.cov(elite_samples[:, i].T, aweights=weights)
+                # compute the weights for the i-th step in each elite sample
+                weights[i] = torch.exp(self.p.distributions[i].log_prob(elite_samples[:, i]) - self.q.distributions[i].log_prob(elite_samples[:, i]))
+                print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
+                # normalize the weights
+                log_weights = np.log(weights[i].cpu())
+                weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
+                
+
+                # update proposal distribution based on elite samples
+                mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
+                # pdb.set_trace()
+
+                cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
+
                 # only keep the diagonal of the covariance matrix 
                 diag = cov.diag()
                 if (diag > 0.1).any() or (diag < 0).any():
                     print(f"Step {i} in population {k} has a covariance matrix with a diagonal that is too large or negative! Clamping between 0 and 0.1...")
                     diag = torch.clamp(diag, 0, 0.1)
+                
                 cov = torch.diag(diag)
-                self.covs.append(cov)
 
-            for i in range(12):
-                # check if covs are PD
-                print("Covariance matrix is positive definite: " + str(is_positive_definite(covs[i])))
+                self.means[i] = mean
+                self.covs[i] = cov
+
+                # check is cov is PD
+                print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
+                try:
+                    self.q = SeedableMultivariateNormal(self.means, self.covs, self.noise_seed)
+                except ValueError:
+                    # may occur if f is improperly specified
+                    # pdb.set_trace()
+                    print(mean, cov)
+                    print(f"Highly improbable weights at step {i} in population {k}! Exiting...")
+
+                    zeroedWeight = True
+                    break
+
                 plt.figure()
                 for sample in population:
                     sns.histplot(sample[i], kde=True, bins=30)
@@ -208,15 +225,6 @@ class CrossEntropyMethod:
                 plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
                 plt.close()
             
-            try:
-                self.q = SeedableMultivariateNormal(means, covs, noise_seed=self.noise_seed)
-            except ValueError:
-                # may occur if f is improperly specified
-                print(means, covs)
-                print(f"Highly improbable weights! Exiting...")
-                zeroedWeight = True
-                break
-
             if zeroedWeight:
                 break
 
@@ -226,8 +234,8 @@ class CrossEntropyMethod:
                 print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
 
-
         # plot the population and elite scores
+
         plt.figure()
         plt.plot(populationScores)
         plt.plot(eliteScores)
@@ -240,6 +248,7 @@ class CrossEntropyMethod:
         plt.close()
 
 
+
         print("===FINISHED OPTIMIZATION===")
         print("===NOMINAL VALUES===\n")
 
@@ -248,21 +257,7 @@ class CrossEntropyMethod:
             print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
         # compute best solution and its objective value
-        best_objective_value = 999999
-        self.simulator.reset()
-        for stepNumber in range(12):
-            best_solutionMean = self.means[i]
-            best_solutionCov = self.covs[i]
-
-            dist = SeedableMultivariateNormal(best_solutionMean, best_solutionCov, noise_seed=self.noise_seed)
-
-            noise = dist.sample()
-            print(f"Step {stepNumber} with noise: {noise}")
-            isCollision, collisionVal, currentPos = self.simulator.step(noise)
-            best_objective_value = min(best_objective_value, collisionVal)
-            print(f"Collision: {isCollision}, Collision Value: {collisionVal}, Current Position: {currentPos}")
-
-            if isCollision: break
+        best_solutionMean, best_solutionCov, best_objective_value = self.q.compute_best_solution(self.simulator)
         
         return self.means, self.covs, self.q, best_solutionMean, best_solutionCov, best_objective_value
     
