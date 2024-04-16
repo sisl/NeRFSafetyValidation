@@ -180,22 +180,21 @@ class CrossEntropyMethod:
             
             # normalize the weights
             log_weights = np.log(weights.cpu())
-            weights = np.exp(log_weights - logsumexp(log_weights, dim=1)).cuda()
+            weights = np.exp(log_weights - logsumexp(log_weights)).cuda()
 
             # update proposal distribution based on elite samples
             means = weights @ elite_samples # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-            covs = torch.cov(elite_samples, rowvar=False, aweights=weights)
-
-            # only keep the diagonal of the covariance matrix 
-            diag = covs.diag()
-            if (diag > 0.1).any() or (diag < 0).any():
-                print(f"Covariance matrix has a diagonal that is too large or negative! Clamping between 0 and 0.1...")
-                diag = torch.clamp(diag, 0, 0.1)
-
-            covs = torch.diag(diag)
-
-            self.means[i] = means
-            self.covs[i] = covs
+            # covs = torch.cov(elite_samples.T, aweights=weights)
+            covs = []
+            for i in range(12):
+                cov = torch.cov(elite_samples[:, i].T, aweights=weights)
+                # only keep the diagonal of the covariance matrix 
+                diag = cov.diag()
+                if (diag > 0.1).any() or (diag < 0).any():
+                    print(f"Step {i} in population {k} has a covariance matrix with a diagonal that is too large or negative! Clamping between 0 and 0.1...")
+                    diag = torch.clamp(diag, 0, 0.1)
+                cov = torch.diag(diag)
+                self.covs.append(cov)
 
             for i in range(12):
                 # check if covs are PD
