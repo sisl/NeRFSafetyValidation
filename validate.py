@@ -25,16 +25,22 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
     elif stresstest == "Cross Entropy Method":
         print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
         
-        noise_meanQ = torch.tensor(noise_mean)
-        noise_covQ = torch.square(torch.diag(torch.tensor(noise_std)))
-        noise_meanP = torch.tensor(noise_mean)
-        noise_covP = torch.square(torch.diag(torch.tensor(noise_std)))
+        noise_meanQ = [noise_mean]*12 # 12 x 12
+        noise_covQ = torch.stack([torch.square(torch.diag(torch.tensor(noise_std)))]*12) # 12 x 12 x 12
+        noise_meanP = [noise_mean]*12 # 12 x 12
+        noise_covP = torch.stack([torch.square(torch.diag(torch.tensor(noise_std)))]*12) # 12 x 12 x 12
         noise_seed = torch.Generator(device=device)
 
         q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
         p = SeedableMultivariateNormal(noise_meanP, noise_covP, noise_seed=noise_seed)
         cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, noise_seed, blend_file, opt.workspace)
-        cem.optimize()
+        means, covs, dists, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
+        print(f"Means: {means}")
+        print(f"Covariance Matrices: {covs}")
+        print(f"Final proposal distribution: {dists}")
+        print(f"Best solution mean: {best_solutionMean}")
+        print(f"Best solution covariance matrix: {best_solutionCov}")  
+        print(f"Best objective value: {best_objective_value}")  
     else:
         print(f"Unrecognized stress test {stresstest}")
         exit()

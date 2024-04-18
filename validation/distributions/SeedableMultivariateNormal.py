@@ -13,26 +13,31 @@ class SeedableMultivariateNormal:
     def __init__(self, means, covs, noise_seed=None):
         self.means = means
         self.covs = covs
-        self.noise_seed = noise_seed
-        self.distributions = [torch.distributions.MultivariateNormal(means, covs) for _ in range(len(means))]
+        self.noise_seed = noise_seed.initial_seed()
+        self.distributions = [torch.distributions.MultivariateNormal(mean, cov) for mean, cov in zip(means, covs)]
 
-    def sample(self):
+    def sample(self, simulationNumber):
         if self.noise_seed is not None:
-            torch.manual_seed(self.noise_seed.initial_seed())
+            torch.manual_seed(self.noise_seed + simulationNumber)
         return [dist.sample() for dist in self.distributions]
     
     def compute_best_solution(self, simulator):
-        best_objective_value = 999999
+        best_objective_value = 999999999
+        best_solutionMean = None
+        best_solutionCov = None
         simulator.reset()
         for stepNumber in range(12):
-            best_solutionMean = self.means[stepNumber]
-            best_solutionCov = self.covs[stepNumber]
+            curr_mean = self.means[stepNumber]
+            curr_cov = self.covs[stepNumber]
 
-            dist = torch.distributions.MultivariateNormal(best_solutionMean, best_solutionCov)
+            dist = torch.distributions.MultivariateNormal(curr_mean, curr_cov)
             noise = dist.sample()
             print(f"Step {stepNumber} with noise: {noise}")
             isCollision, collisionVal, currentPos = simulator.step(noise)
-            best_objective_value = min(best_objective_value, collisionVal)
+            if collisionVal < best_objective_value:
+                best_solutionMean = curr_mean
+                best_solutionCov = curr_cov
+                best_objective_value = collisionVal
             print(f"Collision: {isCollision}, Collision Value: {collisionVal}, Current Position: {currentPos}")
 
             if isCollision: break

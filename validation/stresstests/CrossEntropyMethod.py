@@ -7,8 +7,6 @@ from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-import pdb
-
 from validation.utils.mathUtils import is_positive_definite
 
 class CrossEntropyMethod:
@@ -22,7 +20,10 @@ class CrossEntropyMethod:
             p: target distribution
             m: number of samples per iteration
             m_elite: number of elite samples per iteration
-            kmax: number of iterations
+            kmax: number of populations
+            noise_seed: noise seed generator used for SeedableMultivariateNormal
+            blend_file: Blender file to use for visualizations
+            workspace: Directory for NeRF intrinsics
         """
         self.simulator = simulator
         self.q = q # 12 x 12 (12 step #s and 12 noise parameters)
@@ -48,7 +49,8 @@ class CrossEntropyMethod:
             mean: mean of the updated proposal distribution
             cov: covariance of the updated proposal distribution
             q: final proposal distribution
-            best_solution: best solution found during the optimization process
+            best_solutionMean: best solution mean found during the optimization process
+            best_solutionCov: best solution covariance matrix found during the optimization process
             best_objective_value: value of the function_to_maximize at the best_solution
         """
 
@@ -72,13 +74,12 @@ class CrossEntropyMethod:
             for simulationNumber in range(self.m):
                 # ONE SIMULATION BELOW
                 self.simulator.reset()
-                noises = self.q.sample()
+                noises = self.q.sample(simulationNumber)
                 trajectory = [noise.cpu().numpy() for noise in noises]
                 outputSimulationList = []
 
                 pCumulative = 0
                 qCumulative = 0
-
 
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
@@ -87,10 +88,8 @@ class CrossEntropyMethod:
                 everCollided = False
 
                 for stepNumber in range(12):
-                    outputStepList = [k, simulationNumber, stepNumber] # what will be written to the CSV
-                    # noise = self.q[stepNumber].sample()
+                    outputStepList = [k, simulationNumber, stepNumber] # list written to the CSV
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
-
 
                     if self.TOY_PROBLEM:
                         # append the current position to positions
@@ -148,8 +147,8 @@ class CrossEntropyMethod:
                     print(f"Average number of steps to collision: {self.stepsToCollision / (self.collisions)}")
 
                 if not self.TOY_PROBLEM:
-                    # write results to CSV using the format in MonteCarlo.py
-                    with open("./results/collisionValuesCEM_k10m10.csv", "a") as csvFile:
+                    # write results to CSV
+                    with open(f"./results/collisionValuesCEM_m{self.m}melite{self.m_elite}k{self.kmax}.csv", "a") as csvFile:
                         print(f"Noise List: {trajectory}")
                         writer = csv.writer(csvFile)
                         for outputStepList in outputSimulationList:
@@ -166,14 +165,14 @@ class CrossEntropyMethod:
 
             print(f"Average score of population {k}: {risks.mean()}")
             populationScores.append(risks.mean())
+
             # select elite samples and compute weights
-            # elite_indices = np.argsort(risks)[-self.m_elite:] # top m_elite indices
             elite_indices = np.argsort(risks)[:self.m_elite] # bottom m_elite indices
             elite_samples = torch.tensor(np.array(population)[elite_indices])
+
             # print average score of elite samples
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
-
             weights = [0] * 12 # each step in each elite sample carries a weight
 
             # compute the weights
@@ -185,11 +184,13 @@ class CrossEntropyMethod:
                 log_weights = np.log(weights[i].cpu())
                 weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
                 
+                # check for negative weights
+                if torch.any(weights[i] < 0):
+                    print(f"Warning: Negative weights detected: {weights[i]}")
+                    weights[i] = torch.clamp(weights[i], min=0)  # Set negative weights to zero
 
                 # update proposal distribution based on elite samples
                 mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
-                # pdb.set_trace()
-
                 cov = torch.cov(elite_samples[:, i].T, aweights=weights[i])
 
                 # only keep the diagonal of the covariance matrix 
@@ -199,23 +200,11 @@ class CrossEntropyMethod:
                     diag = torch.clamp(diag, 0, 0.1)
                 
                 cov = torch.diag(diag)
-
                 self.means[i] = mean
                 self.covs[i] = cov
 
                 # check is cov is PD
                 print("Covariance matrix is positive definite: " + str(is_positive_definite(cov)))
-                try:
-                    self.q = SeedableMultivariateNormal(self.means, self.covs, self.noise_seed)
-                except ValueError:
-                    # may occur if f is improperly specified
-                    # pdb.set_trace()
-                    print(mean, cov)
-                    print(f"Highly improbable weights at step {i} in population {k}! Exiting...")
-
-                    zeroedWeight = True
-                    break
-
                 plt.figure()
                 for sample in population:
                     sns.histplot(sample[i], kde=True, bins=30)
@@ -224,6 +213,15 @@ class CrossEntropyMethod:
                 plt.ylabel('Density')
                 plt.savefig(f'./results/pltpaths/noise_distribution_step_{i}.png')
                 plt.close()
+            
+            try:
+                self.q = SeedableMultivariateNormal(self.means, self.covs, self.noise_seed)
+            except ValueError:
+                # may occur if q is improperly specified
+                print(mean, cov)
+                print(f"Highly improbable weights in population {k}! Exiting...")
+                zeroedWeight = True
+                break
             
             if zeroedWeight:
                 break
@@ -235,7 +233,6 @@ class CrossEntropyMethod:
 
 
         # plot the population and elite scores
-
         plt.figure()
         plt.plot(populationScores)
         plt.plot(eliteScores)
@@ -246,7 +243,6 @@ class CrossEntropyMethod:
         plt.ylabel("Average Score")
         plt.savefig(f"./results/pltpaths/populationScores.png")
         plt.close()
-
 
 
         print("===FINISHED OPTIMIZATION===")
