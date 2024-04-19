@@ -13,7 +13,7 @@ from validation.utils.blenderUtils import runBlenderOnFailure
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed):
+def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.

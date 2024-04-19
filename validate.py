@@ -12,7 +12,8 @@ from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
 from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
-from validation.utils.replay import replay
+from validation.utils.replay.replay_MC import replay_MC
+from validation.utils.replay.replay_CEM import replay_CEM
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -284,7 +285,13 @@ if __name__ == "__main__":
     noise_mean = extra_cfg['mpc_noise_mean']
 
     if opt.r:
-        replay(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed)
+        if stress_test == "Monte Carlo":
+            replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed)
+        elif stress_test == "Cross Entropy Method":
+            replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed)
+        else:
+            print(f"Unrecognized stress test {stress_test}")
+            exit()
     else:
         # Main loop
         validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
