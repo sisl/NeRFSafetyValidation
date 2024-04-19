@@ -19,6 +19,7 @@ if __name__ == "__main__":
     n_sim = argv[2]
     step = argv[3]
     simulationList = argv[4]
+    populationNum = argv[5]
 
     basefolder = bpy.path.abspath('//') + f'paths/{exp_name}'
 
@@ -95,14 +96,18 @@ if __name__ == "__main__":
     simulationList = json.loads(simulationList) # convert JSON string into list of lists
     
     # bounding boxes representing drone locations at all timesteps including failure
+    i = 0 if populationNum is "NA" else 1
     for stepList in simulationList:
-        location = stepList[15:18]    
+        location = stepList[15+i:18+i]    
         add_cube(project, location)
 
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
     blend_file_name = os.path.splitext(blend_file_name)[0]
-    blend_file_path =  f"{blend_file_name}_failure_{n_sim}_{step}.blend"
+    if populationNum is not "None":
+        blend_file_path =  f"{blend_file_name}_failure_{populationNum}_{n_sim}_{step}.blend"
+    else:
+        blend_file_path =  f"{blend_file_name}_failure_{n_sim}_{step}.blend"
     failure_dir = os.path.join("./results/", blend_file_name, "failures")
     os.makedirs(failure_dir, exist_ok=True)  # create the directory if it doesn't exist
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(failure_dir, blend_file_path))
