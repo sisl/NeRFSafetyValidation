@@ -178,18 +178,18 @@ class CrossEntropyMethod:
             # compute the weights
             for i in range(12):
                 # compute the weights for the i-th step in each elite sample
-                weights[i] = torch.exp(self.p.distributions[i].log_prob(elite_samples[:, i]) - self.q.distributions[i].log_prob(elite_samples[:, i]))
-                print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
-                # normalize the weights
-                eps = 1e-8
-                weights[i] += eps   # add small positive constant for numerical stability
-                log_weights = np.log(weights[i].cpu())
-                weights[i] = np.exp(log_weights - logsumexp(log_weights)).cuda()
+                log_weights = (self.p.distributions[i].log_prob(elite_samples[:, i]) - self.q.distributions[i].log_prob(elite_samples[:, i])).cpu()
 
-                # check for negative weights
-                if torch.any(weights[i] < 0):
-                    print(f"Warning: Negative weights detected: {weights[i]}")
-                    weights[i] = torch.clamp(weights[i], min=eps)  # Set negative weights to barely above zero
+                # normalize the weights
+                log_weights -= torch.logsumexp(log_weights, dim=0)
+                
+                print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
+                weights[i] = torch.exp(log_weights).cuda()
+
+                # check for negative/zero weights
+                if torch.any(weights[i] <= 0):
+                    print(f"Warning: Negative/zero weights detected: {weights[i]}")
+                    weights[i] = torch.clamp(weights[i], min=1e-8)  # Set negative weights to barely above zero
 
                 # update proposal distribution based on elite samples
                 mean = weights[i] @ elite_samples[:, i] # (1 x 12) @ (12 x len(elite_samples)) = (1 x len(elite_samples))
