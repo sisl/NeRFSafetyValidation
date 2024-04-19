@@ -127,7 +127,7 @@ class CrossEntropyMethod:
                         self.stepsToCollision += stepNumber
                         everCollided = True
                         if not self.TOY_PROBLEM:
-                            runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber, outputSimulationList)
+                            runBlenderOnFailure(self.blend_file, self.workspace, simulationNumber, stepNumber, outputSimulationList, populationNum=k)
                         break
                 
                 if self.TOY_PROBLEM:
@@ -182,7 +182,7 @@ class CrossEntropyMethod:
 
                 # normalize the weights
                 log_weights -= torch.logsumexp(log_weights, dim=0)
-                
+
                 print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
                 weights[i] = torch.exp(log_weights).cuda()
 
