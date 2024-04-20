@@ -39,7 +39,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
         print(f"Means: {means}")
         print(f"Covariance Matrices: {covs}")
         print(f"Final proposal distribution: {dists}")
-        print(f"Best solution mean: {best_solutionMean}")
+        print(f"Best solution means: {best_solutionMean}")
         print(f"Best solution covariance matrix: {best_solutionCov}")  
         print(f"Best objective value: {best_objective_value}")  
     else:
