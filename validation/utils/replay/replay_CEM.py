@@ -124,7 +124,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                 runBlenderOnFailure(blend_file, workspace, simulationNumber, step, outputSimulationList, populationNum=population)
 
             # count by simulation
-            nerf_traj_condition = True if simulationResult[simulationNumber][-1][1].upper() == "TRUE" else False
+            nerf_traj_condition = True if simulationResult[population][simulationNumber][-1][1].upper() == "TRUE" else False
             tp_count_traj += everCollided and nerf_traj_condition
             fn_count_traj += everCollided and not nerf_traj_condition
             fp_count_traj += not everCollided and nerf_traj_condition

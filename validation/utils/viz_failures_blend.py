@@ -96,7 +96,7 @@ if __name__ == "__main__":
     simulationList = json.loads(simulationList) # convert JSON string into list of lists
     
     # bounding boxes representing drone locations at all timesteps including failure
-    i = 0 if populationNum is "NA" else 1
+    i = 0 if populationNum == "NA" else 1
     for stepList in simulationList:
         location = stepList[15+i:18+i]    
         add_cube(project, location)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
     blend_file_name = os.path.splitext(blend_file_name)[0]
-    if populationNum is not "None":
+    if populationNum != "None":
         blend_file_path =  f"{blend_file_name}_failure_{populationNum}_{n_sim}_{step}.blend"
     else:
         blend_file_path =  f"{blend_file_name}_failure_{n_sim}_{step}.blend"
