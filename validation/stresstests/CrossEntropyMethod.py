@@ -219,8 +219,7 @@ class CrossEntropyMethod:
                 plt.close()
             
             try:
-                self.q = SeedableMultivariateNormal(self.means[0:2], self.covs[0:2], self.noise_seed)
-
+                self.q = SeedableMultivariateNormal(self.means, self.covs, self.noise_seed)
             except ValueError:
                 # may occur if q is improperly specified
                 print(mean, cov)
