@@ -110,12 +110,12 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
                 everCollided = True
                 # count the remaining steps after collision as false negatives
                 remaining_steps = len(simulationSteps) - step - 1
-                runBlenderOnFailure(blend_file, workspace, simulationNumber, step)
+                runBlenderOnFailure(blend_file, workspace, simulationNumber, step, outputSimulationList)
                 fn_count_step += remaining_steps
                 break
         if not everCollided:
             # visualize simulation at the end if no collision occurred
-            runBlenderOnFailure(blend_file, workspace, simulationNumber, len(simulationSteps)-1)
+            runBlenderOnFailure(blend_file, workspace, simulationNumber, step, outputSimulationList)
 
         # count by simulation
         nerf_traj_condition = True if simulationResult[simulationNumber][-1][1].upper() == "TRUE" else False
