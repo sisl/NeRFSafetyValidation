@@ -175,7 +175,7 @@ class CrossEntropyMethod:
             # print average score of elite samples
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
-            weights = [0] *  # each step in each elite sample carries a weight
+            weights = [0] * self.steps # each step in each elite sample carries a weight
 
             # compute the weights
             for i in range(self.steps):
