@@ -169,7 +169,10 @@ class CrossEntropyMethod:
             populationScores.append(risks.mean())
 
             # select elite samples and compute weights
-            elite_indices = np.argsort(risks)[:self.m_elite] # bottom m_elite indices
+            if self.TOY_PROBLEM:
+                elite_indices = np.argsort(risks)[-self.m_elite:] # top m_elite indices
+            else:
+                elite_indices = np.argsort(risks)[:self.m_elite] # bottom m_elite indices
             elite_samples = torch.tensor(np.array(population)[elite_indices])
 
             # print average score of elite samples
