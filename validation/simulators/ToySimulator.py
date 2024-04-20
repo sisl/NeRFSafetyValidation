@@ -31,6 +31,6 @@ noise_mean = torch.zeros(12, 2)
 noise_std = torch.ones(12, 2)
 
 simulator = ToySimulator(collision_threshold)
-cem = CrossEntropyMethod(simulator, q, p, 10, 3, 50, None, None, None)
+cem = CrossEntropyMethod(simulator, q, p, 10, 3, 50, noise_seed, None, None)
 
 means, covs, q, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
