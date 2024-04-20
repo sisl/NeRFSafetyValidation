@@ -25,19 +25,21 @@ class CrossEntropyMethod:
             blend_file: Blender file to use for visualizations
             workspace: Directory for NeRF intrinsics
         """
+        self.steps = len(q.means)
         self.simulator = simulator
         self.q = q # 12 x 12 (12 step #s and 12 noise parameters)
         self.p = p # same as above
         self.m = m # 13?
         self.m_elite = m_elite # 12?
         self.kmax = kmax # 2?
-        self.means = [0] * 12
-        self.covs = [0] * 12
+        self.means = [0] * self.steps
+        self.covs = [0] * self.steps
         self.collisions = 0
         self.stepsToCollision = 0
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = noise_seed
+        
 
         self.TOY_PROBLEM = False
 
@@ -87,7 +89,7 @@ class CrossEntropyMethod:
                 riskSteps = np.array([]) # store the score values for each step
                 everCollided = False
 
-                for stepNumber in range(12):
+                for stepNumber in range(self.steps):
                     outputStepList = [k, simulationNumber, stepNumber] # list written to the CSV
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
@@ -173,15 +175,15 @@ class CrossEntropyMethod:
             # print average score of elite samples
             print(f"Average score of elite samples from population {k}: {risks[elite_indices].mean()}")
             eliteScores.append(risks[elite_indices].mean())
-            weights = [0] * 12 # each step in each elite sample carries a weight
+            weights = [0] *  # each step in each elite sample carries a weight
 
             # compute the weights
-            for i in range(12):
+            for i in range(self.steps):
                 # compute the weights for the i-th step in each elite sample
                 log_weights = (self.p.distributions[i].log_prob(elite_samples[:, i]) - self.q.distributions[i].log_prob(elite_samples[:, i])).cpu()
 
                 # normalize the weights
-                log_weights -= logsumexp(log_weights, dim=0)
+                log_weights -= logsumexp(log_weights)
 
                 print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
                 weights[i] = torch.exp(log_weights).cuda()
@@ -217,7 +219,8 @@ class CrossEntropyMethod:
                 plt.close()
             
             try:
-                self.q = SeedableMultivariateNormal(self.means, self.covs, self.noise_seed)
+                self.q = SeedableMultivariateNormal(self.means[0:2], self.covs[0:2], self.noise_seed)
+
             except ValueError:
                 # may occur if q is improperly specified
                 print(mean, cov)
@@ -230,7 +233,7 @@ class CrossEntropyMethod:
 
             # print the updated proposal distribution
             print(f"Updated Proposal Distribution:")
-            for i in range(12):
+            for i in range(self.steps):
                 print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
 
@@ -251,7 +254,7 @@ class CrossEntropyMethod:
         print("===NOMINAL VALUES===\n")
 
         # print the nominal values
-        for i in range(12):
+        for i in range(self.steps):
             print(f"Step {i}: Mean: {self.means[i]}, Covariance: {self.covs[i]}")
 
         # compute best solution and its objective value
