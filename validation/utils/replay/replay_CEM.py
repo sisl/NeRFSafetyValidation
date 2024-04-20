@@ -70,7 +70,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
     # run replay validation
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed)
     print(f"Starting replay validation on BlenderSimulator")
-    for population in range(len(simulationData)):
+    for population in simulationData.keys():
         for simulationNumber, simulationSteps in simulationData[population].items():
             simulator.reset()
             outputSimulationList = []
