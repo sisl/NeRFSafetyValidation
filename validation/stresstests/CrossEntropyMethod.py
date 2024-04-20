@@ -181,7 +181,7 @@ class CrossEntropyMethod:
                 log_weights = (self.p.distributions[i].log_prob(elite_samples[:, i]) - self.q.distributions[i].log_prob(elite_samples[:, i])).cpu()
 
                 # normalize the weights
-                log_weights -= torch.logsumexp(log_weights, dim=0)
+                log_weights -= logsumexp(log_weights, dim=0)
 
                 print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
                 weights[i] = torch.exp(log_weights).cuda()
