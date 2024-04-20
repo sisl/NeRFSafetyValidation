@@ -47,8 +47,8 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
         with open(csv_file_path, 'r') as file:
             reader = csv.reader(file)
             for row in reader:
-                populationNumber = row[0]
-                simulationNumber = row[1]
+                populationNumber = int(row[0])
+                simulationNumber = int(row[1])
                 noise_vector = torch.from_numpy(np.array(row[3:15], dtype=np.float32)).to(device)
                 if populationNumber not in simulationData:
                     simulationData[populationNumber] = {}
@@ -76,7 +76,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
             outputSimulationList = []
             simTrajLogLikelihood = 0
             everCollided = False
-            print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps!")
+            print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps in population {population}!")
             for step in trange(len(simulationSteps)):
                 noise = simulationSteps[step]
                 print(f"Replaying step {step} with noise: {noise}")
