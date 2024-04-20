@@ -1,5 +1,4 @@
 import torch
-from torch.distributions import MultivariateNormal
 import numpy as np
 
 from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
@@ -19,7 +18,8 @@ class ToySimulator:
         is_collision = np.linalg.norm(self.position) > self.collision_threshold
         return is_collision, collision_value, self.position
 
-noise_seed = torch.Generator(device=torch.device)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+noise_seed = torch.Generator(device=device)
 q = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
 p = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
 collision_threshold = 10.0
