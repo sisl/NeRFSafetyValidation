@@ -26,7 +26,7 @@ class SeedableMultivariateNormal:
         best_solutionMean = None
         best_solutionCov = None
         simulator.reset()
-        for stepNumber in range(12):
+        for stepNumber in range(len(self.means)):
             curr_mean = self.means[stepNumber]
             curr_cov = self.covs[stepNumber]
 
