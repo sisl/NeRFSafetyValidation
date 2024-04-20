@@ -2,6 +2,7 @@ import torch
 from torch.distributions import MultivariateNormal
 import numpy as np
 
+from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
 from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
 
 class ToySimulator:
@@ -18,8 +19,9 @@ class ToySimulator:
         is_collision = np.linalg.norm(self.position) > self.collision_threshold
         return is_collision, collision_value, self.position
 
-q = [MultivariateNormal(torch.zeros(2), torch.eye(2)*0.25) for _ in range(12)]
-p = [MultivariateNormal(torch.zeros(2), torch.eye(2)*0.25) for _ in range(12)]
+noise_seed = torch.Generator(device=torch.device)
+q = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
+p = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
 collision_threshold = 10.0
 goal_position = np.array([5.0, 5.0])
 
@@ -27,6 +29,6 @@ noise_mean = torch.zeros(12, 2)
 noise_std = torch.ones(12, 2)
 
 simulator = ToySimulator(collision_threshold)
-cem = CrossEntropyMethod(simulator, q, p, 10, 3, 50, None, None)
+cem = CrossEntropyMethod(simulator, q, p, 10, 3, 50, None, None, None)
 
 means, covs, q, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
