@@ -186,7 +186,7 @@ class CrossEntropyMethod:
                 log_weights -= logsumexp(log_weights)
 
                 print(f"Likelihood of step {i} of elite samples under p: {self.p.distributions[i].log_prob(elite_samples[:, i]).mean()}")
-                weights[i] = torch.exp(log_weights).cuda()
+                weights[i] = torch.exp(log_weights)
 
                 # check for negative/zero weights
                 if torch.any(weights[i] <= 0):
