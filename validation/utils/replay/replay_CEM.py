@@ -116,7 +116,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                     everCollided = True
                     # count the remaining steps after collision as false negatives
                     remaining_steps = len(simulationSteps) - step - 1
-                runBlenderOnFailure(blend_file, workspace, simulationNumber, step, outputSimulationList, populationNum=population)
+                    runBlenderOnFailure(blend_file, workspace, simulationNumber, step, outputSimulationList, populationNum=population)
                     fn_count_step += remaining_steps
                     break
             if not everCollided:
