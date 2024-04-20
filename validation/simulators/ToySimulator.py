@@ -20,8 +20,10 @@ class ToySimulator:
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 noise_seed = torch.Generator(device=device)
-q = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
-p = SeedableMultivariateNormal(torch.zeros(2), torch.eye(2)*0.25, noise_seed=noise_seed)
+noise_meanQ = [torch.zeros(2)]*2
+noise_covQ = torch.stack([torch.eye(2)*0.25]*2)
+q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
+p = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
 collision_threshold = 10.0
 goal_position = np.array([5.0, 5.0])
 
