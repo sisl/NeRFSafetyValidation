@@ -55,7 +55,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                     simulationResult[populationNumber] = {}
                 if simulationNumber not in simulationData[populationNumber]:
                     simulationData[populationNumber][simulationNumber] = []
-                    simulationResult[populationNumber][simulationNumber][simulationNumber] = []
+                    simulationResult[populationNumber][simulationNumber] = []
                 simulationData[populationNumber][simulationNumber].append(noise_vector)
                 simulationResult[populationNumber][simulationNumber].append([row[-2], row[-1]])
 
