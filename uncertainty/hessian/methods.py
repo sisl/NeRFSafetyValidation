@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from scipy.optimize import fmin_bfgs
 
@@ -43,3 +44,33 @@ def bfgs(x):
     hessian_inv = fmin_bfgs(func, x, fprime=grad, disp=False, full_output=True)[3]
     hessian = torch.inverse(torch.tensor(hessian_inv, dtype=torch.float))
     return hessian
+
+def regression_gradient(theta, func, perturbations=100, delta=0.01):
+    """
+    Estimates the gradient from the results of random perturbations from a point theta using linear regression.
+
+    Parameters:
+    theta (numpy.ndarray): The point at which to estimate the gradient.
+    func (function): The function whose gradient is to be estimated.
+    perturbations (int, optional): The number of random perturbations to generate.
+    delta (float, optional): The scale of the random perturbations.
+
+    Returns:
+    gradient: The estimated gradient of the function at theta.
+    """
+
+    n = len(theta)
+
+    # perturbation matrix and utility change vector
+    delta_theta = np.zeros((perturbations, n))
+    delta_u = np.zeros(perturbations)
+
+    # generate random perturbations and calculate utility change
+    for i in range(perturbations):
+        delta_theta[i] = delta * np.random.randn(n)
+        delta_u[i] = func(theta + delta_theta[i]) - func(theta)
+
+    # estimate gradient w/ linear regression
+    gradient = np.linalg.pinv(delta_theta) @ delta_u
+
+    return gradient

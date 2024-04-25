@@ -1,4 +1,4 @@
-from uncertainty.hessian.methods import bfgs, finite_difference
+from uncertainty.hessian.methods import bfgs, finite_difference, regression_gradient
 
 
 class HessianApproximator:
@@ -29,5 +29,7 @@ class HessianApproximator:
             return finite_difference(x, self.func, self.epsilon)
         elif self.method == 'bfgs':
             return bfgs(x)
+        elif self.method == 'regression_gradient':
+            return regression_gradient(x, lambda theta: regression_gradient(theta, self.func))
         else:
             raise ValueError(f"Unknown method: {self.method}")
