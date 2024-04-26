@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # save the Blender file
     blend_file_name = os.path.basename(bpy.data.filepath)
     blend_file_name = os.path.splitext(blend_file_name)[0]
-    if populationNum != "None":
+    if populationNum != "NA":
         blend_file_path =  f"{blend_file_name}_failure_{populationNum}_{n_sim}_{step}.blend"
     else:
         blend_file_path =  f"{blend_file_name}_failure_{n_sim}_{step}.blend"
