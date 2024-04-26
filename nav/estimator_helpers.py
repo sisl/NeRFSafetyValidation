@@ -277,9 +277,7 @@ class Estimator():
         if self.is_filter is True and success_flag is True:
             #xt is 12-vector
             #Hessian is 12x12
-            # TODO: Figure out how to actually compute Hessian
-            hess = torch.eye(12)
-            # hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
+            hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
 
             # #Turn covariance into positive definite
             # hess_np = hess.cpu().detach().numpy()
