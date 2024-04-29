@@ -280,7 +280,6 @@ class Estimator():
             #Hessian is 12x12
             hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
 
-            xt.requires_grad_(True)
             finite_difference_approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), method='finite_difference')
             finite_difference_hess = finite_difference_approximator.compute(xt.clone().detach())
 
