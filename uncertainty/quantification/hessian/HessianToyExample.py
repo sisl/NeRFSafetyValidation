@@ -5,7 +5,7 @@ from uncertainty.quantification.hessian.HessianApproximator import HessianApprox
 
 # simple quadratic function
 def func(input):
-    return torch.sum(input**2)
+    return torch.exp(input)
 
 # point to compute at
 x = torch.randn(12, requires_grad=True)  # 12-dimensional vector
