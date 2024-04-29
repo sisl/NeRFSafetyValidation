@@ -280,13 +280,19 @@ class Estimator():
             #Hessian is 12x12
             hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
 
-            finite_difference_hess = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
-            bfgs_hess = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
-            regression_gradient_hess = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
-            
+            finite_difference_approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), method='finite_difference')
+            finite_difference_hess = finite_difference_approximator.compute(xt.clone().detach())
+
+            bfgs_approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), method='bfgs')
+            bfgs_hess = bfgs_approximator.compute(xt.clone().detach())
+
+            regression_gradient_approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), method='regression_gradient')
+            regression_gradient_hess = regression_gradient_approximator.compute(xt.clone().detach())
+
             diff_finite_difference = torch.norm(hess - finite_difference_hess, p='fro')
             diff_bfgs = torch.norm(hess - bfgs_hess, p='fro')
             diff_regression_gradient = torch.norm(hess - regression_gradient_hess, p='fro')
+
 
             print("Difference between exact Hessian and finite difference approximation:", diff_finite_difference.item())
             print("Difference between exact Hessian and BFGS approximation:", diff_bfgs.item())
