@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 from torch.optim import LBFGS
+from sklearn.linear_model import LinearRegression
+
 import pdb
 
 
@@ -93,6 +95,10 @@ def regression_gradient(theta, func, perturbations=100, delta=0.01):
         delta_u[i] = func(torch.from_numpy(theta.detach().numpy() + delta_theta[i])).sum().item() - func(theta).sum().item()
 
     # estimate Hessian w/ multivariate regression
-    hessian = np.linalg.pinv(delta_theta.T @ delta_theta) @ delta_theta.T @ delta_u
+    X = np.hstack([delta_theta, 0.5*np.outer(delta_theta, delta_theta).reshape(perturbations, -1)])
+    model = LinearRegression().fit(X, delta_u)
 
-    return torch.from_numpy(hessian).reshape(n, n)
+    # The coefficients corresponding to the quadratic terms represent the Hessian
+    hessian = model.coef_[n:].reshape(n, n)
+
+    return torch.from_numpy(hessian)
