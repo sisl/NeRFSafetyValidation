@@ -94,11 +94,16 @@ def regression_gradient(theta, func, perturbations=100, delta=0.01):
         delta_theta[i] = delta * np.random.randn(n)
         delta_u[i] = func(torch.from_numpy(theta.detach().numpy() + delta_theta[i])).sum().item() - func(theta).sum().item()
 
-    # estimate Hessian w/ multivariate regression
+    # estimate hessian w/ multivariate regression
     X = np.hstack([delta_theta, 0.5*np.outer(delta_theta, delta_theta).reshape(perturbations, -1)])
     model = LinearRegression().fit(X, delta_u)
 
-    # The coefficients corresponding to the quadratic terms represent the Hessian
-    hessian = model.coef_[n:].reshape(n, n)
+    hessian_elements = model.coef_[n:]
+    hessian = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            # elements of the hessian are symmetric, so we only need to compute half of them
+            index = int(n*i - i*(i-1)/2 + j)
+            hessian[i, j] = hessian[j, i] = hessian_elements[index]
 
     return torch.from_numpy(hessian)
