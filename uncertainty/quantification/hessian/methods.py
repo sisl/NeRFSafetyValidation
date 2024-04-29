@@ -32,7 +32,7 @@ def finite_difference(x, func, epsilon):
 
         return hessian.view(*size, *size)
 
-def bfgs(x):
+def bfgs(x, func):
     """
     Approximate the Hessian using the BFGS method (scipy optimizer).
 
@@ -43,9 +43,9 @@ def bfgs(x):
     hessian: the approximated Hessian matrix.
     """
     x = x.detach().numpy()
-    func = lambda x: func(torch.tensor(x)).item()
-    grad = lambda x: torch.autograd.grad(func(torch.tensor(x)), torch.tensor(x))[0].numpy()
-    hessian_inv = fmin_bfgs(func, x, fprime=grad, disp=False, full_output=True)[3]
+    func_value = lambda x: func(torch.tensor(x)).item()
+    grad = lambda x: torch.autograd.grad(func_value(torch.tensor(x)), torch.tensor(x))[0].numpy()
+    hessian_inv = fmin_bfgs(func_value, x, fprime=grad, disp=False, full_output=True)[3]
     hessian = torch.inverse(torch.tensor(hessian_inv, dtype=torch.float))
     return hessian
 

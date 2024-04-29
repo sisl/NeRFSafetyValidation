@@ -28,7 +28,7 @@ class HessianApproximator:
         if self.method == 'finite_difference':
             return finite_difference(x, self.func, self.epsilon)
         elif self.method == 'bfgs':
-            return bfgs(x)
+            return bfgs(x, self.func)
         elif self.method == 'regression_gradient':
             return regression_gradient(x, lambda theta: regression_gradient(theta, self.func))
         else:
