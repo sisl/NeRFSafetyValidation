@@ -48,8 +48,8 @@ def bfgs(x, func):
     x_tensor = torch.tensor(x, requires_grad=True)
     x_numpy = x_tensor.detach().numpy()
     func_value = lambda x: func(torch.tensor(x, requires_grad=True))
-    grad = lambda x: torch.autograd.grad(func_value(x_tensor), x_tensor, retain_graph=True, allow_unused=True)[0]
-    grad = grad.detach().numpy() if grad is not None else None
+    grad_func = lambda x: torch.autograd.grad(func_value(x_tensor), x_tensor, retain_graph=True, allow_unused=True)[0]
+    grad = grad_func(x).detach().numpy() if grad_func(x) is not None else None
     hessian_inv = fmin_bfgs(func_value, x_numpy, fprime=grad, disp=False, full_output=True)[3]
     hessian = torch.inverse(torch.tensor(hessian_inv, dtype=torch.float))
     return hessian
