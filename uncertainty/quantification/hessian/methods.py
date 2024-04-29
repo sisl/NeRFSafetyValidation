@@ -92,7 +92,7 @@ def regression_gradient(theta, func, perturbations=100, delta=0.01):
         delta_theta[i] = delta * np.random.randn(n)
         delta_u[i] = func(torch.from_numpy(theta.detach().numpy() + delta_theta[i])).sum().item() - func(theta).sum().item()
 
-    # estimate gradient w/ linear regression
-    gradient = np.linalg.pinv(delta_theta) @ delta_u
+    # estimate Hessian w/ multivariate regression
+    hessian = np.linalg.pinv(delta_theta.T @ delta_theta) @ delta_theta.T @ delta_u
 
-    return torch.from_numpy(gradient)
+    return torch.from_numpy(hessian).reshape(n, n)
