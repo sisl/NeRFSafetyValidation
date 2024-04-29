@@ -69,7 +69,7 @@ def lbfgs(x, func):
 
     return hessian
 
-def regression_gradient(theta, func, perturbations=100, delta=0.01):
+def regression_gradient(theta, func, perturbations=200, delta=1e-6):
     """
     Estimates the gradient from the results of random perturbations from a point theta using linear regression.
 
