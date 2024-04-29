@@ -1,4 +1,4 @@
-from uncertainty.hessian.methods import bfgs, finite_difference, regression_gradient
+from uncertainty.quantification.hessian.methods import bfgs, finite_difference, regression_gradient
 
 
 class HessianApproximator:
