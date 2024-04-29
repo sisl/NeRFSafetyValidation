@@ -2,7 +2,7 @@ from uncertainty.hessian.methods import bfgs, finite_difference, regression_grad
 
 
 class HessianApproximator:
-    def __init__(self, func, method='finite_difference', epsilon=1e-4):
+    def __init__(self, func, method='finite_difference', epsilon=1e-8):
         """
         Initialize the Hessian approximator.
 
