@@ -20,7 +20,8 @@ def finite_difference(x, func, epsilon):
         grad_x = torch.autograd.grad(f_x, x, create_graph=True)[0]
 
         for i in range(n):
-            x_i = x.clone()
+            x_i = x.clone().detach()
+            x_i.requires_grad_(True)
             x_i[i] += epsilon
             f_x_i = func(x_i)
             grad_x_i = torch.autograd.grad(f_x_i, x_i, create_graph=True)[0]
