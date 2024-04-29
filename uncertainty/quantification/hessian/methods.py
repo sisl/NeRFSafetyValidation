@@ -24,9 +24,9 @@ def finite_difference(x, func, epsilon):
 
         for i in range(n):
             x_i = x.clone().detach()
+            x_i.requires_grad_(True)
             x_i[i] += epsilon
             f_x_i = func(x_i)
-            x_i.requires_grad_(True)
             grad_x_i = torch.autograd.grad(f_x_i, x_i, create_graph=True, allow_unused=True)[0]
             if grad_x_i is None:
                 grad_x_i = torch.zeros_like(x_i)
