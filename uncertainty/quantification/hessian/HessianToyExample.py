@@ -16,9 +16,11 @@ actual_hessian = F.hessian(func, x)
 for method in ['finite_difference', 'bfgs', 'regression_gradient']:
     approximator = HessianApproximator(func, method=method)
     approx_hessian = approximator.compute(x)
+    diff_matrix = actual_hessian - approx_hessian
     diff = torch.norm(actual_hessian - approx_hessian)
     print("Actual Hessian: ")
     print(actual_hessian)
     print(f'Hessian approximated with {method}: ')
     print(approx_hessian)
     print(f"Difference between actual Hessian and {method} approximation:", diff.item())
+    print(f"Element-wise difference between actual Hessian and {method} approximation:\n", diff_matrix)
