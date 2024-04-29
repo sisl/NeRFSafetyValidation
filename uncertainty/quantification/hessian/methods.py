@@ -25,7 +25,8 @@ def finite_difference(x, func, epsilon):
 
         for i in range(n):
             x_i = x.clone().detach()
-            x_i[i] += epsilon
+            x_i.requires_grad_(True)
+            x_i = x_i + torch.eye(n)*epsilon  # Avoid in-place operation
             f_x_i = func(x_i)
             pdb.set_trace()
             grad_x_i = torch.autograd.grad(f_x_i, x_i, create_graph=False, allow_unused=True)[0]
