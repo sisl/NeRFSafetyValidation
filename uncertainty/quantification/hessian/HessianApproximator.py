@@ -1,4 +1,4 @@
-from uncertainty.quantification.hessian.methods import bfgs, finite_difference, regression_gradient
+from uncertainty.quantification.hessian.methods import lbfgs, finite_difference, regression_gradient
 
 
 class HessianApproximator:
@@ -8,7 +8,7 @@ class HessianApproximator:
 
         Parameters:
         func: The function for which to compute the Hessian.
-        method: The method to use for approximating the Hessian ('finite_difference' or 'bfgs').
+        method: The method to use for approximating the Hessian ('finite_difference' or 'lbfgs').
         epsilon: The small value used for finite differences (only used if method is 'finite_difference').
         """
         self.func = func
@@ -28,7 +28,7 @@ class HessianApproximator:
         if self.method == 'finite_difference':
             return finite_difference(x, self.func, self.epsilon)
         elif self.method == 'bfgs':
-            return bfgs(x, self.func)
+            return lbfgs(x, self.func)
         elif self.method == 'regression_gradient':
             return regression_gradient(x, lambda theta: regression_gradient(theta, self.func))
         else:

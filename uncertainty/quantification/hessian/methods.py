@@ -33,7 +33,7 @@ def finite_difference(x, func, epsilon):
 
         return hessian.view(*size, *size)
 
-def bfgs(x, func):
+def lbfgs(x, func):
     """
     Approximate the Hessian using the LBFGS method.
 
