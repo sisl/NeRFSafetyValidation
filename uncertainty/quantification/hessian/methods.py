@@ -10,6 +10,8 @@ def finite_difference(x, func, epsilon):
 
         Parameters:
         x: the point at which to compute the Hessian.
+        func (function): The function whose gradient is to be estimated.
+        epsilon: constant to be added
 
         Returns:
         hessian: the approximated Hessian matrix.
@@ -37,15 +39,17 @@ def bfgs(x, func):
 
     Parameters:
     x: the point at which to compute the Hessian.
+    func (function): The function whose gradient is to be estimated.
+
 
     Returns:
     hessian: the approximated Hessian matrix.
     """
     x_tensor = torch.tensor(x, requires_grad=True)
     x_numpy = x_tensor.detach().numpy()
-    func_value = lambda x: func(torch.tensor(x, requires_grad=True)).detach().item()
-    grad = lambda x: torch.autograd.grad(func(torch.tensor(x, requires_grad=True)), x_tensor, retain_graph=True, allow_unused=True)[0].detach().numpy()
-    pdb.set_trace()
+    func_value = lambda x: func(torch.tensor(x, requires_grad=True))
+    grad = lambda x: torch.autograd.grad(func_value(x_tensor), x_tensor, retain_graph=True, allow_unused=True)[0]
+    grad = grad.detach().numpy() if grad is not None else None
     hessian_inv = fmin_bfgs(func_value, x_numpy, fprime=grad, disp=False, full_output=True)[3]
     hessian = torch.inverse(torch.tensor(hessian_inv, dtype=torch.float))
     return hessian
