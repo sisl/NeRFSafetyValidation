@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from scipy.optimize import fmin_bfgs
+import pdb
 
 
 def finite_difference(x, func, epsilon):
@@ -17,6 +18,7 @@ def finite_difference(x, func, epsilon):
         size = x.size()
         hessian = torch.zeros(n, n)
         f_x = func(x)
+        pdb.set_trace()
         grad_x = torch.autograd.grad(f_x, x, create_graph=True, allow_unused=True)[0]
         if grad_x is None:
             grad_x = torch.zeros_like(x)
@@ -25,6 +27,7 @@ def finite_difference(x, func, epsilon):
             x_i = x.clone().detach()
             x_i[i] += epsilon
             f_x_i = func(x_i)
+            pdb.set_trace()
             grad_x_i = torch.autograd.grad(f_x_i, x_i, create_graph=False, allow_unused=True)[0]
             if grad_x_i is None:
                 grad_x_i = torch.zeros_like(x_i)
