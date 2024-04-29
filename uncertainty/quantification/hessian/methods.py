@@ -26,10 +26,10 @@ def finite_difference(x, func, epsilon):
         for i in range(n):
             x_i = x.clone().detach()
             x_i.requires_grad_(True)
-            x_i[i] += epsilon
-            f_x_i = func(x_i)
-            pdb.set_trace()
-            grad_x_i = torch.autograd.grad(f_x_i, x_i, create_graph=False, allow_unused=True)[0]
+            x_i_plus_epsilon = x_i.clone()  # create a new tensor to avoid in-place operation
+            x_i_plus_epsilon[i] = x_i[i] + epsilon
+            f_x_i = func(x_i_plus_epsilon)
+            grad_x_i = torch.autograd.grad(f_x_i, x_i_plus_epsilon, create_graph=False, allow_unused=True)[0]
             if grad_x_i is None:
                 grad_x_i = torch.zeros_like(x_i)
             hessian[i] = (grad_x_i - grad_x) / epsilon
