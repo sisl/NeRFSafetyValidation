@@ -5,7 +5,6 @@ import time
 import cv2
 import matplotlib.pyplot as plt
 from nav.math_utils import vec_to_rot_matrix, mahalanobis, rot_x, nerf_matrix_to_ngp_torch, calcSE3Err
-from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
 def find_POI(img_rgb, render=False): # img - RGB image in range 0...255
     img = np.copy(img_rgb)
