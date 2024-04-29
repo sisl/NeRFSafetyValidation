@@ -90,7 +90,7 @@ def regression_gradient(theta, func, perturbations=100, delta=0.01):
     # generate random perturbations and calculate utility change
     for i in range(perturbations):
         delta_theta[i] = delta * np.random.randn(n)
-        delta_u[i] = func(theta + delta_theta[i]) - func(theta)
+        delta_u[i] = func(theta.detach().numpy() + delta_theta[i]) - func(theta.detach().numpy())
 
     # estimate gradient w/ linear regression
     gradient = np.linalg.pinv(delta_theta) @ delta_u
