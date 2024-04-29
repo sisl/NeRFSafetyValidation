@@ -43,7 +43,7 @@ def bfgs(x, func):
     hessian: the approximated Hessian matrix.
     """
     x = x.detach().numpy()
-    func_value = lambda x: func(torch.tensor(x, requires_grad=True))
+    func_value = lambda x: func(torch.tensor(x, requires_grad=True)).detach().numpy()
     grad = lambda x: torch.autograd.grad(torch.tensor(func_value(torch.tensor(x, requires_grad=True))), torch.tensor(x, requires_grad=True), retain_graph=True)[0].detach().numpy()
     hessian_inv = fmin_bfgs(func_value, x, fprime=grad, disp=False, full_output=True)[3]
     hessian = torch.inverse(torch.tensor(hessian_inv, dtype=torch.float))
