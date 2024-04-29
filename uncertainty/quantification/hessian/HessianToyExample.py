@@ -5,11 +5,10 @@ from uncertainty.quantification.hessian.HessianApproximator import HessianApprox
 
 # simple quadratic function
 def func(input):
-    x, y = input
-    return x**2 + y**2
+    return torch.sum(input**2)
 
 # point to compute at
-x = torch.tensor([1.0, 2.0], requires_grad=True)
+x = torch.randn(12, requires_grad=True)  # 12-dimensional vector
 
 # actual hessian
 actual_hessian = F.hessian(func, x)
