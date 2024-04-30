@@ -30,6 +30,6 @@ class HessianApproximator:
         elif self.method == 'bfgs':
             return lbfgs(x, self.func)
         elif self.method == 'regression_gradient':
-            return regression_gradient(x, lambda theta: regression_gradient(theta, self.func))
+            return regression_gradient(x, self.func)
         else:
             raise ValueError(f"Unknown method: {self.method}")
