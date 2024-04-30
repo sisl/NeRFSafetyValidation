@@ -14,7 +14,7 @@ x = torch.randn(12, requires_grad=True)  # 12-dimensional vector
 # actual hessian
 actual_hessian = F.hessian(func, x)
 
-for method in ['finite_difference', 'bfgs', 'regression_gradient']:
+for method in ['finite_difference', 'bfgs']:
     approximator = HessianApproximator(func, method=method)
     approx_hessian = approximator.compute(x)
     diff_matrix = actual_hessian - approx_hessian
@@ -26,21 +26,47 @@ for method in ['finite_difference', 'bfgs', 'regression_gradient']:
     print(f"Difference between actual Hessian and {method} approximation:", diff.item())
     print(f"Element-wise difference between actual Hessian and {method} approximation:\n", diff_matrix)
 
-
-# regression gradient w/ regularization
-alphas = np.logspace(-8, 1, num=1000)
-best_alpha = None
+# regression gradient w/o regularization
+deltas = np.logspace(-8, 1, num=1000)
+best_delta = None
 best_hessian = None
 best_diff = float('inf')
-for a in alphas:
-    approximator = HessianApproximator(func, method='regression_gradient_regularized', alpha=a)
+for d in deltas:
+    approximator = HessianApproximator(func, method='regression_gradient', delta=d)
     approx_hessian = approximator.compute(x)
     diff = torch.norm(actual_hessian - approx_hessian)
 
     if diff < best_diff:
-        best_alpha = a
+        best_delta = d
         best_hessian = approx_hessian
         best_diff = diff
+
+print("Actual Hessian: ")
+print(actual_hessian)
+print(f'Hessian approximated with regression_gradient: ')
+print(best_hessian)
+print(f"Difference between actual Hessian and regression_gradient approximation: ", best_diff.item())
+print(f"Element-wise difference between actual Hessian and regression_gradient approximation:\n", best_hessian)
+print("Best value for delta: ", best_delta)
+
+# regression gradient w/ regularization
+alphas = np.logspace(-8, 1, num=1000)
+deltas = np.logspace(-8, 1, num=1000)
+best_delta = None
+best_alpha = None
+best_hessian = None
+best_diff = float('inf')
+for a in alphas:
+    for d in deltas:
+        approximator = HessianApproximator(func, method='regression_gradient_regularized', delta=d, alpha=a)
+        approx_hessian = approximator.compute(x)
+        diff = torch.norm(actual_hessian - approx_hessian)
+
+        if diff < best_diff:
+            best_delta = d
+            best_alpha = a
+            best_hessian = approx_hessian
+            best_diff = diff
 
 print("Actual Hessian: ")
 print(actual_hessian)
@@ -48,6 +74,7 @@ print(f'Hessian approximated with regression_gradient_regularized: ')
 print(best_hessian)
 print(f"Difference between actual Hessian and regression_gradient_regularized approximation: ", best_diff.item())
 print(f"Element-wise difference between actual Hessian and regression_gradient_regularized approximation:\n", best_hessian)
+print("Best value for delta: ", best_delta)
 print("Best value for alpha: ", best_alpha)
 
 # levenberg marquardt

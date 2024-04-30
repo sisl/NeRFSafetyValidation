@@ -146,7 +146,7 @@ def regression_gradient_regularized(theta, func, perturbations=200, delta=1e-6, 
 
     return torch.from_numpy(hessian)
 
-def levenberg_marquardt(x0, func, lmbda=0.01, max_iter=100):
+def levenberg_marquardt(x0, func, lmbda=0.01, max_iter=200):
     """
     Levenberg-Marquardt method for approximating Hessian.
 
