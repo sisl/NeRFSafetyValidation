@@ -3,6 +3,15 @@ from scipy.optimize import minimize
 
 class BayesianLaplace:
     def __init__(self, model, prior_mean, prior_std):
+        """
+        Initialize the BayesianLaplace class.
+
+        Parameters:
+        model (object): The model to be used.
+        prior_mean (float): The mean of the prior distribution.
+        prior_std (float): The standard deviation of the prior distribution.
+        """
+        
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
