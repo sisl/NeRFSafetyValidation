@@ -1,4 +1,4 @@
-from uncertainty.quantification.hessian.methods import lbfgs, finite_difference, regression_gradient, regression_gradient_regularized
+from uncertainty.quantification.hessian.methods import lbfgs, finite_difference, levenberg_marquardt, regression_gradient, regression_gradient_regularized
 
 
 class HessianApproximator:
@@ -33,5 +33,7 @@ class HessianApproximator:
             return regression_gradient(x, self.func)
         elif self.method == 'regression_gradient_regularized':
             return regression_gradient_regularized(x, self.func)
+        elif self.method == 'levenberg_marquardt':
+            return levenberg_marquardt(x, self.func)
         else:
             raise ValueError(f"Unknown method: {self.method}")

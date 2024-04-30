@@ -13,7 +13,7 @@ x = torch.randn(12, requires_grad=True)  # 12-dimensional vector
 # actual hessian
 actual_hessian = F.hessian(func, x)
 
-for method in ['finite_difference', 'bfgs', 'regression_gradient']:
+for method in ['finite_difference', 'bfgs', 'regression_gradient', 'regression_gradient_regularized', 'levenberg_marquardt']:
     approximator = HessianApproximator(func, method=method)
     approx_hessian = approximator.compute(x)
     diff_matrix = actual_hessian - approx_hessian

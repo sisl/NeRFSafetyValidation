@@ -78,7 +78,7 @@ def regression_gradient(theta, func, perturbations=200, delta=1e-6):
     delta (float, optional): The scale of the random perturbations.
 
     Returns:
-    gradient: The estimated gradient of the function at theta.
+    hessian: the approximated Hessian matrix.
     """
 
     n = len(theta)
@@ -118,7 +118,7 @@ def regression_gradient_regularized(theta, func, perturbations=200, delta=1e-6, 
     alpha (float, optional): The regularization strength.
 
     Returns:
-    gradient: The estimated gradient of the function at theta.
+    hessian: the approximated Hessian matrix.
     """
 
     n = len(theta)
@@ -145,3 +145,35 @@ def regression_gradient_regularized(theta, func, perturbations=200, delta=1e-6, 
             hessian[i, j] = hessian[j, i] = hessian_elements[index]
 
     return torch.from_numpy(hessian)
+
+def levenberg_marquardt(x0, func, lmbda=0.01, max_iter=100):
+    """
+    Levenberg-Marquardt method for approximating Hessian.
+
+    Parameters:
+    x0 (numpy.ndarray): Initial guess for the solution.
+    func (function): The function to minimize.
+    lmbda (float, optional): Initial damping factor.
+    max_iter (int, optional): Maximum number of iterations.
+
+    Returns:
+    hessian: the approximated Hessian matrix.
+    """
+    x = x0.clone().detach().requires_grad_(True)
+    for _ in range(max_iter):
+        y = func(x)
+        g = torch.autograd.grad(y, x, create_graph=True)[0]
+        try:
+            dx = torch.linalg.solve(torch.outer(g, g) + lmbda * torch.eye(len(x)), -g)
+            hessian = torch.outer(g, g).detach()  # Approximate Hessian
+        except RuntimeError:
+            lmbda *= 10
+            continue
+        if torch.allclose(dx, torch.zeros_like(dx)):
+            break
+        x = x + dx
+        if func(x) < func(x0):
+            lmbda /= 10
+        else:
+            lmbda *= 10
+    return hessian
