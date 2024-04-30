@@ -28,7 +28,7 @@ for method in ['finite_difference', 'bfgs', 'regression_gradient']:
 
 
 # regression gradient w/ regularization
-alphas = np.logspace(-3, 2, num=20)
+alphas = np.logspace(1e-8, 100, num=1000)
 best_alpha = None
 best_hessian = None
 best_diff = float('inf')
@@ -51,7 +51,7 @@ print(f"Element-wise difference between actual Hessian and regression_gradient_r
 print("Best value for alpha: ", best_alpha)
 
 # levenberg marquardt
-lmbdas = np.logspace(-3, 2, num=20)
+lmbdas = np.logspace(1e-8, 100, num=100)
 best_lmbda = None
 best_hessian = None
 best_diff = float('inf')
