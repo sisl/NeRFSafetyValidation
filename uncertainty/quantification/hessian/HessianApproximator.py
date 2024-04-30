@@ -2,7 +2,7 @@ from uncertainty.quantification.hessian.methods import lbfgs, finite_difference,
 
 
 class HessianApproximator:
-    def __init__(self, func, method='finite_difference', epsilon=1e-8):
+    def __init__(self, func, method='finite_difference', epsilon=1e-8, alpha=0.1, lmbda=0.01):
         """
         Initialize the Hessian approximator.
 
@@ -14,6 +14,8 @@ class HessianApproximator:
         self.func = func
         self.method = method
         self.epsilon = epsilon
+        self.alpha = alpha
+        self.lmbda = lmbda
 
     def compute(self, x):
         """
@@ -32,8 +34,8 @@ class HessianApproximator:
         elif self.method == 'regression_gradient':
             return regression_gradient(x, self.func)
         elif self.method == 'regression_gradient_regularized':
-            return regression_gradient_regularized(x, self.func)
+            return regression_gradient_regularized(x, self.func, alpha=self.alpha)
         elif self.method == 'levenberg_marquardt':
-            return levenberg_marquardt(x, self.func)
+            return levenberg_marquardt(x, self.func, lmbda=self.lmbda)
         else:
             raise ValueError(f"Unknown method: {self.method}")
