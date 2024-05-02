@@ -310,7 +310,8 @@ if __name__ == "__main__":
                 validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
                 break
             except (ValueError, AssertionError):
-                # no path exists through randomly generated points, so reset
+                # no path exists through randomly generated points, so restart w/ new path
+                print("Path not found; restarting with new path...")
                 x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
                 y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
                 z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
