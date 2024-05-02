@@ -19,8 +19,10 @@ def finite_difference(x, func, epsilon):
         n = x.numel()
         size = x.size()
         hessian = torch.zeros(n, n)
-        f_x = func(x)
-        grad_x = torch.autograd.grad(f_x, x, create_graph=True, allow_unused=True)[0]
+        xt = x.clone().detach()
+        xt.requires_grad_(True)
+        f_x = func(xt)
+        grad_x = torch.autograd.grad(f_x, xt, create_graph=True, allow_unused=True)[0]
 
         for i in range(n):
             x_i = x.clone().detach()

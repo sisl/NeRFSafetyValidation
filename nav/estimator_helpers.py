@@ -280,12 +280,6 @@ class Estimator():
             #Hessian is 12x12
             hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
 
-            approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch))
-            approx_hessian = approximator.compute(xt)
-            diff = torch.norm(hess - approx_hessian)
-
-            print(f'DIFF IS: {diff}')
-
             # #Turn covariance into positive definite
             # hess_np = hess.cpu().detach().numpy()
             # hess = nearestPD(hess_np)
