@@ -304,8 +304,30 @@ if __name__ == "__main__":
             print(f"Unrecognized stress test {stress_test}")
             exit()
     else:
-        # Main loop
-        validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
+        while True:
+            try:
+                # Main loop
+                validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
+                break
+            except ValueError:
+                # no path exists through randomly generated points, so reset
+                x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
+                y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
+                z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
+                start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
+                save_coords(start_pos, end_pos, steps)
+                start_pos = torch.tensor(start_pos).float()
+                end_pos = torch.tensor(end_pos).float()
+
+                start_state = torch.cat( [start_pos, init_rates, start_R.reshape(-1), init_rates], dim=0 )
+                end_state   = torch.cat( [end_pos,   init_rates, end_R.reshape(-1), init_rates], dim=0 )
+
+                planner_cfg['start_state'] = start_state.to(device)
+                planner_cfg['end_state'] = end_state.to(device)
+
+                simulator.start_state = start_state
+                simulator.end_state = end_state
+
     
     end_text = 'End of validation'
     print(f'{end_text:.^20}')
