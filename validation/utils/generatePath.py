@@ -1,4 +1,5 @@
 import json
+import random
 import numpy as np
 
 def calculate_steps(start_position, end_position, step_size=0.09):  # calculated step size based on stonehenge
@@ -17,8 +18,8 @@ def load_coords():
 
 def generate_path(x_range, y_range, z_range):
     # generate random start and end points within given bounds
-    start_position = [np.random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
-    end_position = [np.random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
+    start_position = [random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
+    end_position = [random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
     
     # calculate number of steps from start to end
     num_steps = calculate_steps(start_position, end_position)
