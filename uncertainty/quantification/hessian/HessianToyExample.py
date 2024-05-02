@@ -50,8 +50,8 @@ print(f"Element-wise difference between actual Hessian and regression_gradient a
 print("Best value for delta: ", best_delta)
 
 # regression gradient w/ regularization
-alphas = np.logspace(-8, 1, num=25)
-deltas = np.logspace(-8, 1, num=25)
+alphas = np.logspace(-8, 1, num=50)
+deltas = np.logspace(-8, 1, num=50)
 best_delta = None
 best_alpha = None
 best_hessian = None
@@ -78,7 +78,7 @@ print("Best value for delta: ", best_delta)
 print("Best value for alpha: ", best_alpha)
 
 # levenberg marquardt
-lmbdas = np.logspace(-8, 1, num=25)
+lmbdas = np.logspace(-8, 1, num=100)
 best_lmbda = None
 best_hessian = None
 best_diff = float('inf')
