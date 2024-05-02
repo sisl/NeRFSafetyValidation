@@ -12,6 +12,7 @@ from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
 from validation.stresstests.MonteCarlo import MonteCarlo
 import json
 
+from validation.utils.generatePath import generate_path, load_coords, save_coords
 from validation.utils.replay.replay_MC import replay_MC
 from validation.utils.replay.replay_CEM import replay_CEM
 
@@ -128,6 +129,19 @@ if __name__ == "__main__":
         envConfig = json.load(json_file)
     print(f"Reading environment parameters from envConfig.json:\n{envConfig}")
 
+    ### PLANNER CONFIGS
+    planner_cfg = envConfig["planner_cfg"]
+
+    # generate random path
+    x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
+    y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
+    z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
+    if not opt.r:
+        start_pos, end_pos, steps = load_coords()
+    else:
+        start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
+        save_coords(start_pos, end_pos, steps)
+
     seed_everything(opt.seed)
 
     model = NeRFNetwork(
@@ -171,13 +185,10 @@ if __name__ == "__main__":
     path = agent_cfg["path"]     # Directory where pose and images are exchanged
     blend_file = agent_cfg["blend_file"]     # Blend file of your scene
 
-    ### PLANNER CONFIGS
-    planner_cfg = envConfig["planner_cfg"]
-
     # X, Y, Z
     #STONEHENGE
-    start_pos = planner_cfg["start_pos"]      # Starting position [x,y,z]
-    end_pos = planner_cfg["end_pos"]        # Goal position
+    # start_pos = planner_cfg["start_pos"]      # Starting position [x,y,z]
+    # end_pos = planner_cfg["end_pos"]        # Goal position
     
     # start_pos = [-0.09999999999999926,
     #             -0.8000000000010297,
@@ -194,7 +205,7 @@ if __name__ == "__main__":
     init_rates = torch.zeros(3) # All rates
 
     T_final = planner_cfg["T_final"]       # Final time of simulation
-    steps = planner_cfg["steps"]                   # Number of time steps to run simulation
+    # steps = planner_cfg["steps"]                   # Number of time steps to run simulation
 
     planner_lr = planner_cfg["planner_lr"]           # Learning rate when learning a plan
     epochs_init = planner_cfg["epochs_init"]           # Num. Gradient descent steps to perform during initial plan
