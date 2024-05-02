@@ -3,7 +3,7 @@ import numpy as np
 
 def calculate_steps(start_position, end_position, step_size=0.09):  # calculated step size based on stonehenge
     total_distance = np.linalg.norm(np.array(end_position) - np.array(start_position))
-    num_steps = total_distance / step_size
+    num_steps = round(total_distance / step_size)
     return num_steps
 
 def save_coords(start_position, end_position, steps):
