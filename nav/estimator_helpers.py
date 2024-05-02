@@ -5,6 +5,7 @@ import time
 import cv2
 import matplotlib.pyplot as plt
 from nav.math_utils import vec_to_rot_matrix, mahalanobis, rot_x, nerf_matrix_to_ngp_torch, calcSE3Err
+from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
 def find_POI(img_rgb, render=False): # img - RGB image in range 0...255
     img = np.copy(img_rgb)
@@ -278,6 +279,12 @@ class Estimator():
             #xt is 12-vector
             #Hessian is 12x12
             hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
+
+            approximator = HessianApproximator(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch))
+            approx_hessian = approximator.compute(xt)
+            diff = torch.norm(hess - approx_hessian)
+
+            print(f'DIFF IS: {diff}')
 
             # #Turn covariance into positive definite
             # hess_np = hess.cpu().detach().numpy()
