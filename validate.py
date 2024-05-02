@@ -133,12 +133,12 @@ if __name__ == "__main__":
     planner_cfg = envConfig["planner_cfg"]
 
     # generate random path
-    x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
-    y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
-    z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
-    if not opt.r:
+    if opt.r:
         start_pos, end_pos, steps = load_coords()
     else:
+        x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
+        y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
+        z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
         start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
         save_coords(start_pos, end_pos, steps)
 
