@@ -15,10 +15,10 @@ def load_coords():
         data = json.load(f)
     return data['start_position'], data['end_position'], data['steps']
 
-def generate_path(max_start_values, max_end_values):
+def generate_path(x_range, y_range, z_range):
     # generate random start and end points within given bounds
-    start_position = [np.random.uniform(0, max_value) for max_value in max_start_values]
-    end_position = [np.random.uniform(0, max_value) for max_value in max_end_values]
+    start_position = [np.random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
+    end_position = [np.random.uniform(low, high) for low, high in [x_range, y_range, z_range]]
     
     # calculate number of steps from start to end
     num_steps = calculate_steps(start_position, end_position)
