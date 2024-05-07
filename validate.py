@@ -22,7 +22,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):    
     if stresstest == "Monte Carlo":
         print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
-        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace)
+        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace, opt.iter)
         mc.validate()
     elif stresstest == "Cross Entropy Method":
         print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
@@ -35,7 +35,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
 
         q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
         p = SeedableMultivariateNormal(noise_meanP, noise_covP, noise_seed=noise_seed)
-        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, noise_seed, blend_file, opt.workspace)
+        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, noise_seed, blend_file, opt.workspace, opt.iter, opt.k)
         means, covs, dists, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
         print(f"Means: {means}")
         print(f"Covariance Matrices: {covs}")
@@ -60,6 +60,8 @@ if __name__ == "__main__":
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --preload")
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--iter', type=int, default=0)
+    parser.add_argument('--k', type=int, default=0)
 
     ### training options
     parser.add_argument('--ckpt', type=str, default='latest')

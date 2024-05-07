@@ -12,7 +12,7 @@ class MonteCarlo(object):
     collisions = 0
     stepsToCollision = 0
 
-    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, blend_file, workspace):
+    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, blend_file, workspace, start_iter):
         self.simulator = simulator
         self.n_simulations = n_simulations
         self.noise_mean = noise_mean
@@ -23,6 +23,7 @@ class MonteCarlo(object):
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = torch.Generator(device=device)
+        self.start_iter = start_iter
 
     def trajectoryLikelihood(self, noise):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
@@ -32,7 +33,7 @@ class MonteCarlo(object):
         return logLikelihoods.sum()
 
     def validate(self):
-        for simulationNumber in range(self.n_simulations):
+        for simulationNumber in range(self.start_iter, self.n_simulations):
             self.simulator.reset()
 
             outputSimulationList = []

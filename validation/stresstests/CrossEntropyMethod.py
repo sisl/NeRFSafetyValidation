@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from validation.utils.mathUtils import is_positive_definite
 
 class CrossEntropyMethod:
-    def __init__(self, simulator, q, p, m, m_elite, kmax, noise_seed, blend_file, workspace):
+    def __init__(self, simulator, q, p, m, m_elite, kmax, noise_seed, blend_file, workspace, start_iter, start_k):
         """
         Initialize the CrossEntropyMethod class.
 
@@ -39,6 +39,8 @@ class CrossEntropyMethod:
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = noise_seed
+        self.start_iter = start_iter
+        self.start_k = start_k
         
 
         self.TOY_PROBLEM = False
@@ -60,7 +62,7 @@ class CrossEntropyMethod:
         eliteScores = []
         zeroedWeight = False # still unsure how this happens, but takes care of when the weights are all 0
 
-        for k in range(self.kmax):
+        for k in range(self.start_k, self.kmax):
             print(f"Starting population {k}")
             # sample and evaluate function on samples
             population = [] # 10 x 12 x 12 array (one noise for every simulation)
@@ -73,7 +75,7 @@ class CrossEntropyMethod:
                 # plot the path of each simulation
                 plt.figure()
             
-            for simulationNumber in range(self.m):
+            for simulationNumber in range(self.start_iter, self.m):
                 # ONE SIMULATION BELOW
                 self.simulator.reset()
                 noises = self.q.sample(simulationNumber)
