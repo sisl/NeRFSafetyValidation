@@ -62,6 +62,8 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--iter', type=int, default=0)
     parser.add_argument('--k', type=int, default=0)
+    parser.add_argument('--c', action='store_true', help="reload coords")
+
 
     ### training options
     parser.add_argument('--ckpt', type=str, default='latest')
@@ -138,7 +140,7 @@ if __name__ == "__main__":
     x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
     y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
     z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
-    if opt.r:
+    if opt.r or opt.c:
         start_pos, end_pos, steps = load_coords()
     else:
         start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
