@@ -62,7 +62,7 @@ To start, we recommend using the Stonehenge scene used in the nerf-nav paper.
 
 #### Custom Datasets
 
-For getting started with a custom scene/dataset, we recommend using the [BlenderNeRF](https://github.com/maximeraafat/BlenderNeRF) add-on to capture images from your Blender scene, saving those images in your workspace, and then running:
+For getting started with a custom scene/dataset, we recommend using the [BlenderNeRF](https://github.com/maximeraafat/BlenderNeRF) add-on. Alternatively, you should be able to run:
 
 ```bash
 python scripts/colmap2nerf.py --images ./path/to/images --run_colmap
