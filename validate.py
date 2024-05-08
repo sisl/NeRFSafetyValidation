@@ -1,3 +1,4 @@
+import random
 import subprocess
 import numpy as np
 import torch
@@ -317,6 +318,9 @@ if __name__ == "__main__":
             except (ValueError, AssertionError):
                 # no path exists through randomly generated points, so restart w/ new path
                 print("Path not found; restarting with new path...")
+                opt.seed += random.randint(0, 10)
+                seed_everything(opt.seed)
+                simulator.seed = opt.seed
                 x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
                 y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
                 z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
