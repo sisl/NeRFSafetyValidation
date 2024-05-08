@@ -79,6 +79,10 @@ Make sure to download [the latest version of Blender](https://www.blender.org/do
 
 **Note: Make sure there is a Camera object in the scene you use.**
 
+### 7) Create Collision Map & SDF
+
+To compute distances and actually determine failure modes, be sure to edit the range parameters in ```createCollisionMap.py``` and run it within Blender on your scene. Then, run ```createSDF.py``` using the collision map it generates. This will create an SDF saved as ```sdf.npy``` which you will need to place in ```validation/utils``` before running the validation script.
+
 ## Usage
 
 Make sure to first configure the settings for your validation job in `envConfig.json`.
