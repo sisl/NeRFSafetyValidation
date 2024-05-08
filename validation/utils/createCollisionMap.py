@@ -14,12 +14,13 @@ GRANULARITY = 40 # how many points to sample per world meter.
 # this means our drone is approximately 50 cm wide and 50 cm long (and 50 cm tall)
 
 # define the range of the collision map in world coordinates. We got these from looking at the scene in Blender
+GRANULARITY = 40
 START_X = -1.2
-END_x = 0.55
-START_Y = -1.1
-END_Y = 1.1
+END_x = 0.6
+START_Y = -1.2
+END_Y = 1.2
 START_Z = -0.22
-END_Z = 1.1
+END_Z = 1.2
 
 def worldToIndex(world, start, granularity):
     return int(np.floor((world - start) * granularity))

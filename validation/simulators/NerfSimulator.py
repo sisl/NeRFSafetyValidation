@@ -50,11 +50,11 @@ class NerfSimulator(gym.Env):
         # collision grid parameters
         self.GRANULARITY = 40
         self.START_X = -1.2
-        self.END_x = 0.55
-        self.START_Y = -1.1
-        self.END_Y = 1.1
+        self.END_x = 0.6
+        self.START_Y = -1.2
+        self.END_Y = 1.2
         self.START_Z = -0.22
-        self.END_Z = 1.1
+        self.END_Z = 1.2
         self.sdf = np.load("validation/utils/sdf.npy")
         self.seed = seed
 
