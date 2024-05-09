@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument('path', type=str)
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --preload")
     parser.add_argument('--workspace', type=str, default='workspace')
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seed', type=int, default=random.randint(0, 99999999))
     parser.add_argument('--iter', type=int, default=0)
     parser.add_argument('--k', type=int, default=0)
 
