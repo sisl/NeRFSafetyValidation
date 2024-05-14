@@ -35,7 +35,7 @@ def uncertainty(method):
             gt_image = torch.from_numpy(np.array(gt_image))
 
             # load corresponding camera parameters
-            cam_param = load_camera_params(image_name)
+            cam_param = load_camera_params(image_name, opt.path)
 
             # render the image using NeRF
             rays = get_rays_fn(cam_param)
