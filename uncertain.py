@@ -9,11 +9,7 @@ from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
 from uncertainty.quantification.gaussian_approximation_density_uncertainty import GaussianApproximationDensityUncertainty
 from uncertainty.quantification.utils.nerfUtils import load_camera_params
-from PIL import Image
-
 import json
-
-from validation.utils.generatePath import generate_path, load_coords, save_coords
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 H = W = 800
@@ -39,20 +35,26 @@ def uncertainty(method):
 
             # render the image using NeRF
             rays = get_rays_fn(cam_param)
-            rays_o = rays["rays_o"].reshape((H, W, -1))
-            rays_d = rays["rays_d"].reshape((H, W, -1))
+            rays_o = rays["rays_o"].reshape((1, H, W, 3))
+            rays_d = rays["rays_d"].reshape((1, H, W, 3))
 
             c_total, d_total = [], []
             # process image in patches
             for h in range(0, H, patch_size):
                 for w in range(0, W, patch_size):
-                    rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
-                    rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
+                    rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
+                    rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
                     output = render_fn(rays_o_patch, rays_d_patch)
             
                     # extract color/density values
                     c_total.append(output['image'])
                     d_total.append(output['depth'])
+
+                    # CUDA memory hack(?)
+                    del rays_o_patch
+                    del rays_d_patch
+                    del output
+                    torch.cuda.empty_cache()
 
             # concatenate all patches
             c = torch.cat(c_total, dim=1)
