@@ -29,23 +29,34 @@ def uncertainty(method):
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
         path_to_images = opt.path
+        patch_size = 100
         for i, image_name in enumerate(os.listdir(path_to_images)):
-            image_path = os.path.join(path_to_images, image_name)
-            gt_image = Image.open(image_path)
-            gt_image = torch.from_numpy(np.array(gt_image))
 
             # load corresponding camera parameters
+            image_name = f'./train/{image_name}'
             cam_param = load_camera_params(image_name, opt.path)
+            cam_param = torch.tensor([cam_param])
 
             # render the image using NeRF
             rays = get_rays_fn(cam_param)
             rays_o = rays["rays_o"].reshape((H, W, -1))
             rays_d = rays["rays_d"].reshape((H, W, -1))
-            output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
-            # extract color/density values
-            c = output['image']
-            d = output['density']
+            c_total, d_total = [], []
+            # process image in patches
+            for h in range(0, H, patch_size):
+                for w in range(0, W, patch_size):
+                    rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
+                    rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
+                    output = render_fn(rays_o_patch.reshape((1, -1, 3)), rays_d_patch.reshape((1, -1, 3)))
+            
+                    # extract color/density values
+                    c_total.append(output['image'])
+                    d_total.append(output['density'])
+
+            # concatenate all patches
+            c = torch.cat(c_total, dim=1)
+            d = torch.cat(d_total, dim=1)
 
             # calculate rendered color
             r = torch.sum(c, dim=0)  # An approximation of the rendered color
@@ -56,7 +67,6 @@ def uncertainty(method):
 
             results = mu_d_opt, sigma_d_opt
             print(f"Image {i}: mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
-
 
     elif method == "Bayesian Laplace Approximation":
         # TODO: fill out
