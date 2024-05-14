@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.optimize import minimize
 
+from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
+
 class BayesianLaplace:
     def __init__(self, model, prior_mean, prior_std):
         """
@@ -15,6 +17,7 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior)
 
     def log_prior(self, theta):
         return -0.5 * np.sum((theta - self.prior_mean)**2 / self.prior_std**2)
@@ -41,24 +44,12 @@ class BayesianLaplace:
             #print(theta_epsilon, grad[i])
         return grad
 
-    def hessian_negative_log_posterior(self, theta, X, y):
-        epsilon = 1e-5
-        hessian = np.zeros((len(theta), len(theta)))
-        for i in range(len(theta)):
-            for j in range(len(theta)):
-                theta_epsilon = theta.copy()
-                theta_epsilon[i] += epsilon
-                theta_epsilon[j] += epsilon
-                hessian[i, j] = (self.negative_log_posterior(theta_epsilon, X, y) 
-                                 - self.negative_log_posterior(theta, X, y)) / (epsilon**2)
-        return hessian
-
     def fit(self, X, y):
         theta_init = self.model.get_params()
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior, method='BFGS')
         self.model.set_params(res.x)
         self.posterior_mean = res.x
-        self.posterior_cov = np.linalg.inv(self.hessian_negative_log_posterior(res.x, X, y))
+        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res.x))
         return self
 
     def predict(self, X):
