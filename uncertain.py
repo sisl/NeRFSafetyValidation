@@ -29,7 +29,7 @@ def uncertainty(method):
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
         path_to_images = os.path.join(opt.path, "train")
-        patch_size = 100
+        patch_size = 16
         for i, image_name in enumerate(os.listdir(path_to_images)):
 
             # load corresponding camera parameters
