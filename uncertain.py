@@ -28,7 +28,7 @@ def uncertainty(method):
     """
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
-        path_to_images = opt.path
+        path_to_images = os.path.join(opt.path, "train")
         patch_size = 100
         for i, image_name in enumerate(os.listdir(path_to_images)):
 
@@ -48,7 +48,7 @@ def uncertainty(method):
                 for w in range(0, W, patch_size):
                     rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
                     rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size].reshape((1, -1, 3))
-                    output = render_fn(rays_o_patch.reshape((1, -1, 3)), rays_d_patch.reshape((1, -1, 3)))
+                    output = render_fn(rays_o_patch, rays_d_patch)
             
                     # extract color/density values
                     c_total.append(output['image'])
@@ -59,7 +59,7 @@ def uncertainty(method):
             d = torch.cat(d_total, dim=1)
 
             # calculate rendered color
-            r = torch.sum(c, dim=0)  # An approximation of the rendered color
+            r = torch.sum(c, dim=0)
 
             # optimize parameters
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
