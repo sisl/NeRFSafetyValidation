@@ -52,7 +52,7 @@ def uncertainty(method):
             
                     # extract color/density values
                     c_total.append(output['image'])
-                    d_total.append(output['density'])
+                    d_total.append(output['depth'])
 
             # concatenate all patches
             c = torch.cat(c_total, dim=1)
