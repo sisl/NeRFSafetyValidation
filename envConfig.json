@@ -1,6 +1,7 @@
 {
   "simulator" : "NerfSimulator",
   "stress_test" : "Monte Carlo",
+  "uq_method": "Gaussian Approximation",
   "n_simulations" : 100,
   "estimator_cfg": {
     "dil_iter": 3,

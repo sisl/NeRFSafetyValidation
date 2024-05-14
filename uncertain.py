@@ -277,6 +277,7 @@ if __name__ == "__main__":
     simulator_cfg = envConfig["simulator"]
     n_simulations = envConfig["n_simulations"]
     stress_test = envConfig["stress_test"]
+    uq_method = envConfig["uq_method"]
 
     ### NeRF Configs ###
     # Querying the density (for the planner)
@@ -289,9 +290,7 @@ if __name__ == "__main__":
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
   
-
-    uncertainty()
-
-    
+    uncertainty(uq_method)
+  
     end_text = 'End of uncertainty computation'
     print(f'{end_text:.^20}')
