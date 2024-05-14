@@ -13,7 +13,7 @@ from validation.utils.blenderUtils import runBlenderOnFailure
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed):
+def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed, start_iter, start_k):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -32,6 +32,8 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
         render_fn (function): A function to render the scene.
         blender_cfg (dict): The configuration for Blender.
         density_fn (function): A function to get the density of a point in space.
+        start_iter (int): An iteration number to start the script from.
+        start_k (int): An population number to start from.
     '''
 
     # read from csv resulting from simulations
@@ -70,8 +72,9 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
     # run replay validation
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed)
     print(f"Starting replay validation on BlenderSimulator")
-    for population in simulationData.keys():
-        for simulationNumber, simulationSteps in simulationData[population].items():
+    for population in range(start_k, len(simulationData.keys())):
+        for simulationNumber in range(start_iter, len(simulationData[population].items())):
+            simulationSteps = simulationData[population][simulationNumber]
             simulator.reset()
             outputSimulationList = []
             simTrajLogLikelihood = 0
