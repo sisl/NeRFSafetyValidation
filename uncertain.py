@@ -25,8 +25,7 @@ def uncertainty(method):
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
         path_to_images = os.path.join(opt.path, "train")
-        patch_size = 16
-        for i, image_name in enumerate(os.listdir(path_to_images)):
+        for image_name in os.listdir(path_to_images):
 
             # load corresponding camera parameters
             image_name = f'./train/{image_name}'
@@ -53,7 +52,7 @@ def uncertainty(method):
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
             results = mu_d_opt, sigma_d_opt
-            print(f"Image {i}: mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+            print(f"Image {image_name}: mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
 
     elif method == "Bayesian Laplace Approximation":
         # TODO: fill out
