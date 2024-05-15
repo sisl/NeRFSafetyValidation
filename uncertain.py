@@ -37,7 +37,9 @@ def uncertainty(method):
             rays = get_rays_fn(cam_param)
             rays_o = rays["rays_o"].reshape((H, W, -1))
             rays_d = rays["rays_d"].reshape((H, W, -1))
-            output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+            with torch.no_grad():
+                output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
             # extract color/density values
             c = output['image']
