@@ -17,6 +17,11 @@ class GaussianApproximationDensityUncertainty:
         self.d = d
         self.r = r
 
+        # clamp d vals for numerical stability & remove any nans
+        self.d = torch.clamp(self.d, min=-1e8, max=1e8)
+        self.d[torch.isnan(self.d)] = 0
+
+
     def objective(self, params):
         """
         The objective function for the Maximum Likelihood Estimation (MLE).
@@ -29,8 +34,7 @@ class GaussianApproximationDensityUncertainty:
         """
         mu_d, sigma_d = params
         d_expanded = self.d.unsqueeze(-1)
-        eps = 1e-8
-        result = torch.log(torch.sum(self.c**2 * d_expanded**2 * sigma_d**2)) + (torch.mean(self.r) - torch.sum(self.c * mu_d * d_expanded))**2 / (torch.sum(self.c**2 * sigma_d**2 * d_expanded**2) + eps)
+        result = torch.log(torch.sum(self.c**2 * d_expanded**2 * sigma_d**2)) + (torch.mean(self.r) - torch.sum(self.c * mu_d * d_expanded))**2 / torch.sum(self.c**2 * sigma_d**2 * d_expanded**2)
         return result.item()
 
     def optimize(self):
@@ -40,13 +44,12 @@ class GaussianApproximationDensityUncertainty:
         Returns:
         tuple: The optimized mean and standard deviation of the volume density.
         """
-        # Initial guess
         initial_guess = [torch.mean(self.d).item(), torch.std(self.d).item()]
 
-        # Perform the optimization
+        # perform the optimization
         result = minimize(self.objective, initial_guess)
 
-        # Extract the optimized parameters
+        # extract optimized parameters
         mu_d_opt, sigma_d_opt = result.x
 
         return mu_d_opt, sigma_d_opt
