@@ -22,6 +22,7 @@ def uncertainty(method):
     Parameters:
     method (str): Name of the uncertainty computation method.
     """
+    results = []
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
         path_to_images = os.path.join(opt.path, "train")
@@ -51,7 +52,9 @@ def uncertainty(method):
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
-            results = mu_d_opt, sigma_d_opt
+            result = mu_d_opt, sigma_d_opt
+            results.append(result[1].flatten())
+            varName = "optimized sigma_d"
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
 
     elif method == "Bayesian Laplace Approximation":
@@ -62,8 +65,8 @@ def uncertainty(method):
         exit()
 
     # visualize uncertainty
-    plt.hist(results[1].flatten(), bins=50)
-    plt.xlabel('Uncertainty')
+    plt.hist(results, bins=50)
+    plt.xlabel(f'Uncertainty ({varName})')
     plt.ylabel('Frequency')
     plt.savefig('results/uncertainty.png')
     plt.show()
