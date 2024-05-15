@@ -35,27 +35,15 @@ def uncertainty(method):
 
             # render the image using NeRF
             rays = get_rays_fn(cam_param)
-            rays_o = rays["rays_o"].reshape((1, H, W, 3))
-            rays_d = rays["rays_d"].reshape((1, H, W, 3))
+            rays_o = rays["rays_o"].reshape((H, W, -1))
+            rays_d = rays["rays_d"].reshape((H, W, -1))
+            output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
-            c_total, d_total = [], []
-            # process image in patches
-            for h in range(0, H, patch_size):
-                for w in range(0, W, patch_size):
-                    rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
-                    rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
-                    with torch.no_grad():
-                        output = render_fn(rays_o_patch, rays_d_patch)
-            
-                    # extract color/density values
-                    c_total.append(output['image'])
-                    d_total.append(output['depth'])
+            # extract color/density values
+            c = output['image']
+            d = output['depth']
 
-            # concatenate all patches
-            c = torch.cat(c_total, dim=1)
-            d = torch.cat(d_total, dim=1)
-
-            # calculate rendered color
+            # calculate approximated rendered color
             r = torch.sum(c, dim=0)
 
             # optimize parameters
