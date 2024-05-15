@@ -44,17 +44,12 @@ def uncertainty(method):
                 for w in range(0, W, patch_size):
                     rays_o_patch = rays_o[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
                     rays_d_patch = rays_d[:, h:h+patch_size, w:w+patch_size, :].reshape((1, -1, 3))
-                    output = render_fn(rays_o_patch, rays_d_patch)
+                    with torch.no_grad():
+                        output = render_fn(rays_o_patch, rays_d_patch)
             
                     # extract color/density values
                     c_total.append(output['image'])
                     d_total.append(output['depth'])
-
-                    # CUDA memory hack(?)
-                    del rays_o_patch
-                    del rays_d_patch
-                    del output
-                    torch.cuda.empty_cache()
 
             # concatenate all patches
             c = torch.cat(c_total, dim=1)
