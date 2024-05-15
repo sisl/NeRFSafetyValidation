@@ -66,7 +66,7 @@ def uncertainty(method):
     plt.hist(results[1].flatten(), bins=50)
     plt.xlabel('Uncertainty')
     plt.ylabel('Frequency')
-    plt.savefig('results/my_plot.png')
+    plt.savefig('results/uncertainty.png')
     plt.show()
     return
 
