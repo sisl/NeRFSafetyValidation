@@ -251,6 +251,8 @@ class NeRFRenderer(nn.Module):
             'depth': depth,
             'image': image,
             'weights_sum': weights_sum,
+            'rgbs': rgbs,
+            'sigmas': density_outputs['sigma']
         }
 
 
