@@ -22,11 +22,11 @@ def uncertainty(method):
     Parameters:
     method (str): Name of the uncertainty computation method.
     """
-    results = []
-    varName = "optimized sigma_d"
+    results = {"optimized mu_d": [], "optimized sigma_d": []}
+    varNames = ["optimized mu_d", "optimized sigma_d"]
     ac, au = 0, 0
     if method == "Gaussian Approximation":
-        print(f"Starting Gaussian Approximation for Uncertainty Quantification")
+        print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
         path_to_images = os.path.join(opt.path, "train")
         for i, image_name in enumerate(os.listdir(path_to_images)):
 
@@ -54,15 +54,14 @@ def uncertainty(method):
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
-            result = mu_d_opt, sigma_d_opt
-
             # check for absolute certain/uncertain values
-            if result <= 0:
+            if sigma_d_opt <= 0:
                 ac += 1
-            elif result >= 3:
+            elif sigma_d_opt >= 3:
                 au += 1
             else:
-                results.append(result[1])
+                results["optimized mu_d"].append(mu_d_opt)
+                results["optimized sigma_d"].append(sigma_d_opt)
 
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
         
@@ -77,11 +76,12 @@ def uncertainty(method):
         exit()
 
     # visualize uncertainty
-    plt.hist(results, bins=50)
-    plt.xlabel(f'Uncertainty ({varName})')
-    plt.ylabel('Frequency')
-    plt.savefig('results/uncertainty.png')
-    plt.show()
+    for varName in varNames:
+        plt.hist(results[varName], bins=50)
+        plt.xlabel(f'Uncertainty ({varName})')
+        plt.ylabel('Frequency')
+        plt.savefig(f'results/uncertainty{varName}.png')
+        plt.show()
     return
 
 ####################### END OF MAIN LOOP ##########################################
