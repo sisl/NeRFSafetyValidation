@@ -82,6 +82,7 @@ def uncertainty(method):
         plt.ylabel('Frequency')
         plt.savefig(f'results/uncertainty_{varName}.png')
         plt.show()
+        plt.close()
     return
 
 ####################### END OF MAIN LOOP ##########################################
