@@ -23,6 +23,8 @@ def uncertainty(method):
     method (str): Name of the uncertainty computation method.
     """
     results = []
+    varName = "optimized sigma_d"
+    ac, au = 0, 0
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification")
         path_to_images = os.path.join(opt.path, "train")
@@ -53,9 +55,19 @@ def uncertainty(method):
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
             result = mu_d_opt, sigma_d_opt
-            results.append(result[1])
-            varName = "optimized sigma_d"
+
+            # check for absolute certain/uncertain values
+            if result <= 0:
+                ac += 1
+            elif result >= 3:
+                au += 1
+            else:
+                results.append(result[1])
+
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+        
+        print(f'Number of absolute certain sigma_d values: {ac}')
+        print(f'Number of absolute uncertain sigma_d values: {au}')
 
     elif method == "Bayesian Laplace Approximation":
         # TODO: fill out
