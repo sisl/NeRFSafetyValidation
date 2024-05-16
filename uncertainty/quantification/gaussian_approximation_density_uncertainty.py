@@ -36,7 +36,7 @@ class GaussianApproximationDensityUncertainty:
         float: The value of the objective function.
         """
         mu_d, sigma_d = params
-        result = torch.log(torch.sum(self.c**2 * d_expanded**2 * sigma_d**2)) + (self.r - torch.sum(self.c * mu_d * d_expanded))**2 / torch.sum(self.c**2 * sigma_d**2 * d_expanded**2)
+        result = torch.log(torch.sum(self.c**2 * self.d**2 * sigma_d**2)) + (self.r - torch.sum(self.c * mu_d * self.d))**2 / torch.sum(self.c**2 * sigma_d**2 * self.d**2)
         return result.item()
 
     def optimize(self):
