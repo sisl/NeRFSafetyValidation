@@ -8,7 +8,7 @@ from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
 from uncertainty.quantification.gaussian_approximation_density_uncertainty import GaussianApproximationDensityUncertainty
-from uncertainty.quantification.utils.nerfUtils import load_camera_params, plot_heatmap_on_image
+from uncertainty.quantification.utils.nerfUtils import load_camera_params
 import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +31,6 @@ def uncertainty(method):
         for i, image_name in enumerate(os.listdir(path_to_images)):
 
             # load corresponding camera parameters
-            orig_name = image_name
             image_name = f'./train/{image_name}'
             cam_param = load_camera_params(image_name, opt.path)
             cam_param = torch.tensor([cam_param])
@@ -53,7 +52,7 @@ def uncertainty(method):
 
             # optimize parameters
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
-            mu_d_opt, sigma_d_opt, mu_d_opt_pp, sigma_d_opt_pp = gaussian_approximation.optimize()
+            mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
             # check for absolute certain/uncertain values
             if sigma_d_opt <= 0:
@@ -63,9 +62,6 @@ def uncertainty(method):
             else:
                 results["optimized_mu_d"].append(mu_d_opt)
                 results["optimized_sigma_d"].append(sigma_d_opt)
-
-                # plot uncertainty as a heatmap on the image
-                plot_heatmap_on_image(r.cpu().numpy(), orig_name, sigma_d_opt_pp)
 
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
         

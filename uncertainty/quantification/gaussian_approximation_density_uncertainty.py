@@ -21,7 +21,7 @@ class GaussianApproximationDensityUncertainty:
         self.d = self.d.view(self.c.shape[0], self.c.shape[1], -1)
 
 
-    def objective(self, params, c, d, r):
+    def objective(self, params):
         """
         The objective function for the Maximum Likelihood Estimation (MLE).
 
@@ -32,37 +32,22 @@ class GaussianApproximationDensityUncertainty:
         float: The value of the objective function.
         """
         mu_d, sigma_d = params
-        result = torch.log(c**2 * d**2 * sigma_d**2) + (r - c * mu_d * d)**2 / (c**2 * sigma_d**2 * d**2)
+        result = torch.log(torch.sum(self.c**2 * self.d**2 * sigma_d**2)) + (torch.mean(self.r) - torch.sum(self.c * mu_d * self.d))**2 / torch.sum(self.c**2 * sigma_d**2 * self.d**2)
         return result.item()
-    
+
     def optimize(self):
         """
-        This function performs an optimization for each element in the tensor 'self.d'. 
-        The objective function is minimized for each element using the element value and 1.0 as the initial guess.
-        After performing the optimization for all elements, the mean and standard deviation of all the optimized means 
-        and standard deviations are calculated. These represent the mean and standard deviation of the optimized density 
-        values for the whole image.
+        The optimization to find the parameters that minimize the objective function.
 
         Returns:
-        tuple: The mean and standard deviation of the optimized density values for the whole image, 
-           and the optimized mean and standard deviation for each pixel.
+        tuple: The optimized mean and standard deviation of the volume density.
         """
-        mu_d_opt = np.zeros_like(self.d.cpu().numpy())
-        sigma_d_opt = np.zeros_like(self.d.cpu().numpy())
+        initial_guess = [torch.mean(self.d).item(), torch.std(self.d).item()]
 
-        for i in range(self.c.shape[0]):
-            for j in range(self.c.shape[1]):
-                for k in range(self.c.shape[1]):
-                    initial_guess = [self.d[i, j].item(), 1.0]
+        # perform the optimization
+        result = minimize(self.objective, initial_guess)
 
-                    # perform the optimization for pixel (i, j)
-                    result = minimize(self.objective, initial_guess, args=(self.c[i, j, k].item(), self.d[i, j].item(), self.r[i, j, k].item()))
+        # extract optimized parameters
+        mu_d_opt, sigma_d_opt = result.x
 
-                    # extract optimized parameters
-                    mu_d_opt[i, j, k], sigma_d_opt[i, j, k] = result.x
-
-        # params for whole image
-        mu_d_image = np.mean(mu_d_opt)
-        sigma_d_image = np.std(sigma_d_opt)
-
-        return mu_d_image, sigma_d_image, mu_d_opt, sigma_d_opt
+        return mu_d_opt, sigma_d_opt
