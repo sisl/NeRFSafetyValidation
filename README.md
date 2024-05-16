@@ -85,10 +85,16 @@ To compute distances and actually determine failure modes, be sure to edit the r
 
 ## Usage
 
-Make sure to first configure the settings for your validation job in `envConfig.json`.
+Make sure to first configure the settings for your validation job in `envConfig.json`. The following settings we configure for safety validation are:
 
-**TODO: ADD DETAILS ABOUT CONFIG**
-
+* "simulator"
+* "stress_test"
+* "n_simulations"
+* "x_range"
+* "y_range"
+* "z_range"
+* "steps"
+  
 ### Training a NeRF
 
 ```
