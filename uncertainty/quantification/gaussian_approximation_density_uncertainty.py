@@ -17,10 +17,6 @@ class GaussianApproximationDensityUncertainty:
         self.d = d
         self.r = r
 
-        # clamp d vals for numerical stability & remove any nans
-        self.d = torch.clamp(self.d, min=-1e8, max=1e8)
-        self.d[torch.isnan(self.d)] = 0
-
         # reshape d vals
         self.d = self.d.view(self.c.shape[0], self.c.shape[1], -1)
 
@@ -38,20 +34,34 @@ class GaussianApproximationDensityUncertainty:
         mu_d, sigma_d = params
         result = torch.log(torch.sum(self.c**2 * self.d**2 * sigma_d**2)) + (torch.mean(self.r) - torch.sum(self.c * mu_d * self.d))**2 / torch.sum(self.c**2 * sigma_d**2 * self.d**2)
         return result.item()
-
+    
     def optimize(self):
         """
-        The optimization to find the parameters that minimize the objective function.
+        This function performs an optimization for each element in the tensor 'self.d'. 
+        The objective function is minimized for each element using the element value and 1.0 as the initial guess.
+        After performing the optimization for all elements, the mean and standard deviation of all the optimized means 
+        and standard deviations are calculated. These represent the mean and standard deviation of the optimized density 
+        values for the whole image.
 
         Returns:
-        tuple: The optimized mean and standard deviation of the volume density.
+        tuple: The mean and standard deviation of the optimized density values for the whole image, 
+           and the optimized mean and standard deviation for each pixel.
         """
-        initial_guess = [torch.mean(self.d).item(), torch.std(self.d).item()]
+        mu_d_opt = np.zeros_like(self.d.cpu().numpy())
+        sigma_d_opt = np.zeros_like(self.d.cpu().numpy())
 
-        # perform the optimization
-        result = minimize(self.objective, initial_guess)
+        for i in range(self.d.shape[0]):
+            for j in range(self.d.shape[1]):
+                initial_guess = [self.d[i, j].item(), 1.0]
 
-        # extract optimized parameters
-        mu_d_opt, sigma_d_opt = result.x
+                # perform the optimization for pixel (i, j)
+                result = minimize(self.objective, initial_guess, args=(self.c[i, j].item(), self.d[i, j].item(), self.r[i, j].item()))
 
-        return mu_d_opt, sigma_d_opt
+                # extract optimized parameters
+                mu_d_opt[i, j], sigma_d_opt[i, j] = result.x
+
+        # params for whole image
+        mu_d_image = np.mean(mu_d_opt)
+        sigma_d_image = np.std(sigma_d_opt)
+
+        return mu_d_image, sigma_d_image, mu_d_opt, sigma_d_opt
