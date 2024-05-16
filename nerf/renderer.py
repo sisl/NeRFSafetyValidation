@@ -375,6 +375,8 @@ class NeRFRenderer(nn.Module):
         
         results['depth'] = depth
         results['image'] = image
+        results['sigmas'] = sigmas
+        results['rgbs'] = rgbs
 
         return results
 

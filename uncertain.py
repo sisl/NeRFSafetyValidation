@@ -44,11 +44,11 @@ def uncertainty(method):
                 output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
             # extract color/density values
-            c = output['image']
-            d = output['depth']
+            c = output['rgbs']
+            d = output['sigmas']
 
-            # calculate approximated rendered color
-            r = torch.sum(c, dim=0)
+            # extract rendered color
+            r = output['image']            
 
             # optimize parameters
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
