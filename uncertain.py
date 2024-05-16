@@ -22,8 +22,8 @@ def uncertainty(method):
     Parameters:
     method (str): Name of the uncertainty computation method.
     """
-    results = {"optimized mu_d": [], "optimized sigma_d": []}
-    varNames = ["optimized mu_d", "optimized sigma_d"]
+    results = {"optimized_mu_d": [], "optimized_sigma_d": []}
+    varNames = ["optimized_mu_d", "optimized_sigma_d"]
     ac, au = 0, 0
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
@@ -60,8 +60,8 @@ def uncertainty(method):
             elif sigma_d_opt >= 3:
                 au += 1
             else:
-                results["optimized mu_d"].append(mu_d_opt)
-                results["optimized sigma_d"].append(sigma_d_opt)
+                results["optimized_mu_d"].append(mu_d_opt)
+                results["optimized_sigma_d"].append(sigma_d_opt)
 
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
         
@@ -80,7 +80,7 @@ def uncertainty(method):
         plt.hist(results[varName], bins=50)
         plt.xlabel(f'Uncertainty ({varName})')
         plt.ylabel('Frequency')
-        plt.savefig(f'results/uncertainty{varName}.png')
+        plt.savefig(f'results/uncertainty_{varName}.png')
         plt.show()
     return
 
