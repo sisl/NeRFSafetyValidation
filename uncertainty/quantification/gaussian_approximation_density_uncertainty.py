@@ -50,15 +50,16 @@ class GaussianApproximationDensityUncertainty:
         mu_d_opt = np.zeros_like(self.d.cpu().numpy())
         sigma_d_opt = np.zeros_like(self.d.cpu().numpy())
 
-        for i in range(self.d.shape[0]):
-            for j in range(self.d.shape[1]):
-                initial_guess = [self.d[i, j].item(), 1.0]
+        for i in range(self.c.shape[0]):
+            for j in range(self.c.shape[1]):
+                for k in range(self.c.shape[1]):
+                    initial_guess = [self.d[i, j].item(), 1.0]
 
-                # perform the optimization for pixel (i, j)
-                result = minimize(self.objective, initial_guess, args=(self.c[i, j].item(), self.d[i, j].item(), self.r[i, j].item()))
+                    # perform the optimization for pixel (i, j)
+                    result = minimize(self.objective, initial_guess, args=(self.c[i, j, k].item(), self.d[i, j].item(), self.r[i, j, k].item()))
 
-                # extract optimized parameters
-                mu_d_opt[i, j], sigma_d_opt[i, j] = result.x
+                    # extract optimized parameters
+                    mu_d_opt[i, j, k], sigma_d_opt[i, j, k] = result.x
 
         # params for whole image
         mu_d_image = np.mean(mu_d_opt)
