@@ -555,9 +555,6 @@ class NeRFRenderer(nn.Module):
         B, N = rays_o.shape[:2]
         device = rays_o.device
 
-        rgbs = torch.empty((B, N, 3), device=device)
-        sigmas = torch.empty((B, N), device=device)
-
         # never stage when cuda_ray
         if staged and not self.cuda_ray:
             depth = torch.empty((B, N), device=device)
@@ -570,19 +567,15 @@ class NeRFRenderer(nn.Module):
                     results_ = _run(rays_o[b:b+1, head:tail], rays_d[b:b+1, head:tail], **kwargs)
                     depth[b:b+1, head:tail] = results_['depth']
                     image[b:b+1, head:tail] = results_['image']
-                    rgbs[b:b+1, head:tail] = results_['rgbs']  # Store rgbs
-                    sigmas[b:b+1, head:tail] = results_['sigmas']  # Store sigmas
                     head += max_ray_batch
 
             results = {}
             results['depth'] = depth
             results['image'] = image
-            results['rgbs'] = rgbs  # Add rgbs to results
-            results['sigmas'] = sigmas  # Add sigmas to results
+            results['rgbs'] = results_['rgbs']
+            results['sigmas'] = results_['sigmas']
 
         else:
             results = _run(rays_o, rays_d, **kwargs)
-            rgbs = results['rgbs']  # Store rgbs
-            sigmas = results['sigmas']  # Store sigmas
 
         return results
