@@ -53,7 +53,7 @@ def uncertainty(method):
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
             result = mu_d_opt, sigma_d_opt
-            results.append(result[1].flatten())
+            results.append(result[1])
             varName = "optimized sigma_d"
             print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
 
