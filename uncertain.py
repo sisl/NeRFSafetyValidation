@@ -8,7 +8,7 @@ from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
 from uncertainty.quantification.gaussian_approximation_density_uncertainty import GaussianApproximationDensityUncertainty
-from uncertainty.quantification.utils.nerfUtils import load_camera_params
+from uncertainty.quantification.utils.nerfUtils import create_heatmap, load_camera_params
 import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,6 +67,7 @@ def uncertainty(method):
         
         print(f'Number of absolute certain sigma_d values: {ac}')
         print(f'Number of absolute uncertain sigma_d values: {au}')
+        create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
 
     elif method == "Bayesian Laplace Approximation":
         # TODO: fill out

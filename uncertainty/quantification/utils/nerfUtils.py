@@ -1,6 +1,9 @@
 import json
 import os
 
+from matplotlib import pyplot as plt
+import numpy as np
+
 def load_camera_params(image_name, dataset_path):
     """
     Load the camera parameters for a given image.
@@ -13,16 +16,28 @@ def load_camera_params(image_name, dataset_path):
     dict: The camera parameters for the image.
     """
 
-    # Remove the file extension from the image name
+    # remove the file extension from the image name
     image_name = os.path.splitext(image_name)[0]
 
-    # Load the transforms.json file
+    # load the transforms.json file
     with open(os.path.join(dataset_path, 'transforms.json'), 'r') as f:
         transform = json.load(f)
 
-    # Find the camera parameters for the image
+    # find the camera parameters for the image
     for frame in transform['frames']:
         if frame['file_path'] == image_name:
             return frame['transform_matrix']
 
     raise ValueError(f"Camera parameters for image {image_name} not found.")
+
+def create_heatmap(mu_d_opt, sigma_d_opt):
+    hist, xedges, yedges = np.histogram2d(mu_d_opt, sigma_d_opt, bins=50)
+    plt.imshow(hist, interpolation='nearest', origin='low', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+    plt.colorbar(label='Count')
+
+    plt.xlabel('mu_d_opt')
+    plt.ylabel('sigma_d_opt')
+    
+    plt.savefig(f'results/uncertainty_heatmap.png')
+    plt.show()
+    plt.close()
