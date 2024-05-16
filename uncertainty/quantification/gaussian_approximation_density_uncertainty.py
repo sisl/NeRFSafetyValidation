@@ -22,7 +22,7 @@ class GaussianApproximationDensityUncertainty:
         self.d[torch.isnan(self.d)] = 0
 
         # reshape d vals
-        self.d.view(self.c.shape[0], self.c.shape[1], -1)
+        self.d = self.d.view(self.c.shape[0], self.c.shape[1], -1)
 
 
     def objective(self, params):
