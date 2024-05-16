@@ -21,6 +21,9 @@ class GaussianApproximationDensityUncertainty:
         self.d = torch.clamp(self.d, min=-1e8, max=1e8)
         self.d[torch.isnan(self.d)] = 0
 
+        # reshape d vals
+        self.d.view(self.c.shape[0], self.c.shape[1], -1)
+
 
     def objective(self, params):
         """
@@ -33,7 +36,6 @@ class GaussianApproximationDensityUncertainty:
         float: The value of the objective function.
         """
         mu_d, sigma_d = params
-        d_expanded = self.d.unsqueeze(-1)
         result = torch.log(torch.sum(self.c**2 * d_expanded**2 * sigma_d**2)) + (self.r - torch.sum(self.c * mu_d * d_expanded))**2 / torch.sum(self.c**2 * sigma_d**2 * d_expanded**2)
         return result.item()
 
