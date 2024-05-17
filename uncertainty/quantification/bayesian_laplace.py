@@ -27,7 +27,7 @@ class BayesianLaplace:
 
     def log_likelihood(self, theta, X, y):
         self.set_sigma_net_params(theta)
-        y_pred = self.model.predict(X)
+        y_pred = self.model.density(X)['sigma']
         #print(y_pred)
         return -0.5 * np.sum((y - y_pred)**2)
 
@@ -57,7 +57,7 @@ class BayesianLaplace:
 
 
     def predict(self, X):
-        return self.model.predict(X)
+        return self.model.forward(X)[0]
 
     def get_posterior_mean(self):
         return self.posterior_mean
