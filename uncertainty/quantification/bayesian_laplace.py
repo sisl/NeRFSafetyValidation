@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
+import torch
 
 from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
@@ -47,13 +48,19 @@ class BayesianLaplace:
         return grad
 
     def fit(self, X, y):
-        theta_init = list(self.model.get_params(self.lr)[1]['params']) # sigma_net parameters
-        theta_init = theta_init.detach().cpu().numpy()
+        theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
-        self.model.set_params(res.x)
+        # set params of sigma_net
+        start = 0
+        for param in self.model.sigma_net.parameters():
+            end = start + param.numel()
+            new_vals = torch.from_numpy(res.x[start:end]).view(param.shape)
+            param.data.copy_(new_vals)
+            start = end
         self.posterior_mean = res.x
         self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res.x))
         return self
+
 
     def predict(self, X):
         return self.model.predict(X)
