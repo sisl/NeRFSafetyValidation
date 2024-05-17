@@ -204,3 +204,8 @@ class NeRFNetwork(NeRFRenderer):
             params.append({'params': self.bg_net.parameters(), 'lr': lr})
         
         return params
+    
+    def set_params(self, params):
+        for param_dict in params:
+            for param in param_dict['params']:
+                param.data = torch.tensor(param_dict['lr'])

@@ -46,7 +46,7 @@ class BayesianLaplace:
 
     def fit(self, X, y):
         theta_init = self.model.get_params()
-        res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior, method='BFGS')
+        res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
         self.model.set_params(res.x)
         self.posterior_mean = res.x
         self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res.x))

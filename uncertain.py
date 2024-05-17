@@ -7,6 +7,7 @@ import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
+from uncertainty.quantification.bayesian_laplace import BayesianLaplace
 from uncertainty.quantification.gaussian_approximation_density_uncertainty import GaussianApproximationDensityUncertainty
 from uncertainty.quantification.utils.nerfUtils import create_heatmap, load_camera_params
 import json
@@ -70,8 +71,56 @@ def uncertainty(method):
         create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
 
     elif method == "Bayesian Laplace Approximation":
-        # TODO: fill out
-        pass 
+        print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
+        path_to_images = os.path.join(opt.path, "train")
+        for i, image_name in enumerate(os.listdir(path_to_images)):
+
+            # load corresponding camera parameters
+            image_name = f'./train/{image_name}'
+            cam_param = load_camera_params(image_name, opt.path)
+            cam_param = torch.tensor([cam_param])
+
+            # render the image using NeRF
+            rays = get_rays_fn(cam_param)
+            rays_o = rays["rays_o"].reshape((H, W, -1))
+            rays_d = rays["rays_d"].reshape((H, W, -1))
+
+            with torch.no_grad():
+                output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+            # extract color/density values
+            c = output['rgbs']
+            d = output['sigmas']
+
+            # extract rendered color
+            r = output['image']            
+
+            # initialize BayesianLaplace object
+            prior_mean = 0.0
+            prior_std = 1.0
+            bayesian_laplace = BayesianLaplace(model, prior_mean, prior_std)
+
+            # fit the model
+            bayesian_laplace.fit(c, d)
+
+            # get optimized parameters
+            mu_d_opt = bayesian_laplace.get_posterior_mean()
+            sigma_d_opt = bayesian_laplace.get_posterior_cov()
+
+            # check for absolute certain/uncertain values
+            if sigma_d_opt <= 0:
+                ac += 1
+            elif sigma_d_opt >= 3:
+                au += 1
+            else:
+                results["optimized_mu_d"].append(mu_d_opt)
+                results["optimized_sigma_d"].append(sigma_d_opt)
+
+            print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+        
+        print(f'Number of absolute certain sigma_d values: {ac}')
+        print(f'Number of absolute uncertain sigma_d values: {au}')
+        create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
     else:
         print(f"Unrecognized uncertainty quantification method {method}")
         exit()
@@ -81,7 +130,7 @@ def uncertainty(method):
         plt.hist(results[varName], bins=50)
         plt.xlabel(f'Uncertainty ({varName})')
         plt.ylabel('Frequency')
-        plt.savefig(f'results/uncertainty_{varName}.png')
+        plt.savefig(f'results/uncertainty_{method}_{varName}.png')
         plt.show()
         plt.close()
     return
