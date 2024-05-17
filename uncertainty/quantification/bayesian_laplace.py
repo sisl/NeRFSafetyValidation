@@ -48,6 +48,7 @@ class BayesianLaplace:
 
     def fit(self, X, y):
         theta_init = list(self.model.get_params(self.lr)[1]['params']) # sigma_net parameters
+        theta_init = theta_init.detach().cpu().numpy()
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
         self.model.set_params(res.x)
         self.posterior_mean = res.x
