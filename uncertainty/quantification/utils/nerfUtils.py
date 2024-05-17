@@ -32,7 +32,7 @@ def load_camera_params(image_name, dataset_path):
 
 def create_heatmap(mu_d_opt, sigma_d_opt):
     hist, xedges, yedges = np.histogram2d(mu_d_opt, sigma_d_opt, bins=50)
-    plt.imshow(hist, interpolation='nearest', origin='low', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+    plt.imshow(hist, interpolation='nearest', origin='lower', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
     plt.colorbar(label='Count')
 
     plt.xlabel('mu_d_opt')
