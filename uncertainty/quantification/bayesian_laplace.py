@@ -4,7 +4,7 @@ from scipy.optimize import minimize
 from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
 class BayesianLaplace:
-    def __init__(self, model, prior_mean, prior_std):
+    def __init__(self, model, prior_mean, prior_std, lr):
         """
         Initialize the BayesianLaplace class.
 
@@ -12,12 +12,14 @@ class BayesianLaplace:
         model (object): The model to be used.
         prior_mean (float): The mean of the prior distribution.
         prior_std (float): The standard deviation of the prior distribution.
+        lr (float): Learning rate for NeRF model.
         """
         
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
         self.hessian_approximator = HessianApproximator(self.negative_log_posterior)
+        self.lr = lr
 
     def log_prior(self, theta):
         return -0.5 * np.sum((theta - self.prior_mean)**2 / self.prior_std**2)
@@ -45,7 +47,7 @@ class BayesianLaplace:
         return grad
 
     def fit(self, X, y):
-        theta_init = self.model.get_params()
+        theta_init = self.model.get_params(self.lr)
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
         self.model.set_params(res.x)
         self.posterior_mean = res.x

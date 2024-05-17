@@ -98,7 +98,7 @@ def uncertainty(method):
             # initialize BayesianLaplace object
             prior_mean = 0.0
             prior_std = 1.0
-            bayesian_laplace = BayesianLaplace(model, prior_mean, prior_std)
+            bayesian_laplace = BayesianLaplace(model, prior_mean, prior_std, opt.lr)
 
             # fit the model
             bayesian_laplace.fit(c, d)
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=random.randint(0, 99999999))
 
     ### training options
+    parser.add_argument('--lr', type=float, default=1e-2, help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
     parser.add_argument('--num_rays', type=int, default=4096, help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true', help="use CUDA raymarching instead of pytorch")
