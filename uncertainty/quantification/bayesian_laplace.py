@@ -26,7 +26,7 @@ class BayesianLaplace:
         return -0.5 * np.sum((theta - self.prior_mean)**2 / self.prior_std**2)
 
     def log_likelihood(self, theta, X, y):
-        self.model.set_params(theta)
+        self.set_sigma_net_params(theta)
         y_pred = self.model.predict(X)
         #print(y_pred)
         return -0.5 * np.sum((y - y_pred)**2)
@@ -50,13 +50,7 @@ class BayesianLaplace:
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
-        # set params of sigma_net
-        start = 0
-        for param in self.model.sigma_net.parameters():
-            end = start + param.numel()
-            new_vals = torch.from_numpy(res.x[start:end]).view(param.shape)
-            param.data.copy_(new_vals)
-            start = end
+        self.set_sigma_net_params(res.x)
         self.posterior_mean = res.x
         self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res.x))
         return self
@@ -70,3 +64,12 @@ class BayesianLaplace:
 
     def get_posterior_cov(self):
         return self.posterior_cov
+    
+    def set_sigma_net_params(self, updated):
+        # set params of sigma_net
+        start = 0
+        for param in self.model.sigma_net.parameters():
+            end = start + param.numel()
+            new_vals = torch.from_numpy(updated[start:end]).view(param.shape)
+            param.data.copy_(new_vals)
+            start = end
