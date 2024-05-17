@@ -20,7 +20,7 @@ def load_camera_params(image_name, dataset_path):
     image_name = os.path.splitext(image_name)[0]
 
     # load the transforms.json file
-    with open(os.path.join(dataset_path, 'transforms.json'), 'r') as f:
+    with open(os.path.join(dataset_path, 'transforms_train.json'), 'r') as f:
         transform = json.load(f)
 
     # find the camera parameters for the image
