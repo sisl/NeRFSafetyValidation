@@ -31,8 +31,8 @@ def load_camera_params(image_name, dataset_path):
     raise ValueError(f"Camera parameters for image {image_name} not found.")
 
 def create_heatmap(mu_d_opt, sigma_d_opt):
-    hist, xedges, yedges = np.histogram2d(mu_d_opt, sigma_d_opt, bins=50)
-    plt.imshow(hist, interpolation='nearest', origin='lower', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+    hist, xedges, yedges = np.histogram2d(mu_d_opt, sigma_d_opt, bins=20)
+    plt.imshow(hist, interpolation='nearest', origin='lower', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], aspect='auto')
     plt.colorbar(label='Count')
 
     plt.xlabel('mu_d_opt')
