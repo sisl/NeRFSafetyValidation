@@ -63,7 +63,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                 simulationResult[populationNumber][simulationNumber].append([row[-2], row[-1]])
 
     # clear existing csv
-    if os.path.exists("results/replays/collisionValuesReplay.csv"):
+    if os.path.exists("results/replays/collisionValuesReplay.csv") and start_iter == 0:
         os.remove("results/replays/collisionValuesReplay.csv")
 
     # counts
