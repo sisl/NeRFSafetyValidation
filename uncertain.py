@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 H = W = 800
 
 ####################### MAIN LOOP ##########################################
-def uncertainty(method):
+def uncertainty(method, get_rays_fn, render_fn, path_to_images=None, pose=None):
     """
     Compute the uncertainty using the specified method.
 
@@ -28,16 +28,46 @@ def uncertainty(method):
     ac, au = 0, 0
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
-        path_to_images = os.path.join(opt.path, "train")
-        for i, image_name in enumerate(os.listdir(path_to_images)):
+        if path_to_images is not None:
+            for i, image_name in enumerate(os.listdir(path_to_images)):
 
-            # load corresponding camera parameters
-            image_name = f'./train/{image_name}'
-            cam_param = load_camera_params(image_name, opt.path)
-            cam_param = torch.tensor([cam_param])
+                # load corresponding camera parameters
+                image_name = f'./train/{image_name}'
+                cam_param = load_camera_params(image_name, opt.path)
+                cam_param = torch.tensor([cam_param])
 
-            # render the image using NeRF
-            rays = get_rays_fn(cam_param)
+                # render the image using NeRF
+                rays = get_rays_fn(cam_param)
+                rays_o = rays["rays_o"].reshape((H, W, -1))
+                rays_d = rays["rays_d"].reshape((H, W, -1))
+
+                with torch.no_grad():
+                    output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+                # extract color/density values
+                c = output['rgbs']
+                d = output['sigmas']
+
+                # extract rendered color
+                r = output['image']            
+
+                # optimize parameters
+                gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
+                mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
+
+                # check for absolute certain/uncertain values
+                if sigma_d_opt <= 0:
+                    ac += 1
+                elif sigma_d_opt >= 3:
+                    au += 1
+                else:
+                    results["optimized_mu_d"].append(mu_d_opt)
+                    results["optimized_sigma_d"].append(sigma_d_opt)
+
+                print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+        else:
+            # render the image using given pose
+            rays = get_rays_fn(pose)
             rays_o = rays["rays_o"].reshape((H, W, -1))
             rays_d = rays["rays_d"].reshape((H, W, -1))
 
@@ -55,16 +85,8 @@ def uncertainty(method):
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
             mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
-            # check for absolute certain/uncertain values
-            if sigma_d_opt <= 0:
-                ac += 1
-            elif sigma_d_opt >= 3:
-                au += 1
-            else:
-                results["optimized_mu_d"].append(mu_d_opt)
-                results["optimized_sigma_d"].append(sigma_d_opt)
-
-            print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+            print(f"mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+            return mu_d_opt, sigma_d_opt
         
         print(f'Number of absolute certain sigma_d values: {ac}')
         print(f'Number of absolute uncertain sigma_d values: {au}')
@@ -354,7 +376,7 @@ if __name__ == "__main__":
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
   
-    uncertainty(uq_method)
+    uncertainty(uq_method, get_rays_fn, render_fn, path_to_images=os.path.join(opt.path, "train"))
   
     end_text = 'End of uncertainty computation'
     print(f'{end_text:.^20}')

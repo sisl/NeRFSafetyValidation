@@ -3,6 +3,7 @@ import torch
 import csv
 from scipy.stats import norm
 import numpy as np
+from validation.simulators.NerfSimulator import NerfSimulator
 from validation.utils.blenderUtils import runBlenderOnFailure
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -39,13 +40,17 @@ class MonteCarlo(object):
             outputSimulationList = []
             everCollided = False
             simTrajLogLikelihood = 0
+            reward = 0
 
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
                 # pdb.set_trace()
                 noise = torch.normal(self.noise_mean, self.noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
-                isCollision, collisionVal, currentPos = self.simulator.step(noise)
+                if isinstance(self.simulator, NerfSimulator):
+                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noise, reward)
+                else:
+                    isCollision, collisionVal, currentPos = self.simulator.step(noise)
                 outputStepList = [simulationNumber, stepNumber]
 
                 # append the noises
@@ -63,6 +68,11 @@ class MonteCarlo(object):
 
                 simTrajLogLikelihood += curLogLikelihood
                 outputStepList.append(simTrajLogLikelihood)
+
+                if isinstance(self.simulator, NerfSimulator):
+                    # calculate and handle reward
+                    outputStepList.append(reward)
+                    reward = self.simulator.reward(simTrajLogLikelihood, sigma_d_opt)
                 
                 # output the collision value
                 outputStepList.append(isCollision)
@@ -87,8 +97,9 @@ class MonteCarlo(object):
             15-17: XYZ Coordinates
             18: step trajectory likelihood
             19: cumulative trajectory likelihood
-            20: did we collide on this step
-            21: did we collide on this simulation (added post facto)
+            20: reward applied to this step
+            21: did we collide on this step
+            22: did we collide on this simulation (added post facto)
             
             '''
             with open(f'./results/collisionValuesBlenderMC_n{self.n_simulations}.csv', "a") as csvFile:

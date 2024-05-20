@@ -9,6 +9,7 @@ import matplotlib.image
 
 from nav import (Estimator, Agent, Planner, vec_to_rot_matrix, rot_matrix_to_vec)
 from nerf.utils import seed_everything
+from uncertain import uncertainty
 from validation.utils.fileUtils import cache_poses, restore_poses
 from validation.utils.blenderUtils import worldToIndex
 
@@ -59,7 +60,7 @@ class NerfSimulator(gym.Env):
         self.seed = seed
 
 
-    def step(self, disturbance, num_interpolated_points=4):
+    def step(self, disturbance, reward, num_interpolated_points=4):
         """
         Run one timestep of the environment's dynamics. The agent performs the action recommended by the planner,
         subject to the provided disturbance. The function also checks for collisions and updates the state estimate.
@@ -101,6 +102,9 @@ class NerfSimulator(gym.Env):
                 nerf_image_reshaped *= 255
                 nerf_image_reshaped = nerf_image_reshaped.astype(np.uint8)
             # convert to torch object
+
+            # calculate uncertainty
+            _, sigma = uncertainty("Gaussian Approximation", self.filter.get_rays_fn, self.filter.render_fn, pose=true_pose)
             
             print("saving image files")
             gt_img_tuple = gt_img.cpu().detach().numpy()
@@ -119,7 +123,7 @@ class NerfSimulator(gym.Env):
             self.traj.update_state(state_est)
 
             # Replan from the state estimate
-            self.traj.learn_update(self.iter)            
+            self.traj.learn_update(self.iter, reward)            
 
             collisionVal = 9999
 
@@ -145,9 +149,27 @@ class NerfSimulator(gym.Env):
             self.iter += 1
 
             # return if it collided, the value at the collision (sdf), and the position during collision
-            return collided, collisionVal, current_state[:3]
+            return collided, collisionVal, current_state[:3], sigma
         except KeyboardInterrupt:
             return
+        
+    def reward(self, likelihood, sigma_d_opt):
+        """
+        Compute the reward based on the uncertainty of the image and the likelihood of the trajectory.
+
+        Parameters:
+        likelihood (float): The likelihood of the trajectory.
+        sigma_d_opt (float): The optimized standard deviation of the volume density, used as a measure of uncertainty.
+
+        Returns:
+        float: The computed reward.
+        """
+        penalty_strength = 1.0
+
+        # reward is directly proportional to the likelihood and inversely proportional to the uncertainty
+        reward = likelihood / (1.0 + penalty_strength * sigma_d_opt)
+
+        return reward
 
     def reset(self):
         """
@@ -176,7 +198,7 @@ class NerfSimulator(gym.Env):
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
         if not cache_flag:
-            traj.learn_init()
+            traj.learn_init(0)
             init_poses = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_poses"
             init_costs = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_costs"
             target = "cached" / pathlib.Path(self.planner_cfg['exp_name'])
