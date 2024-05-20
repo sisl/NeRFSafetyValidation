@@ -104,7 +104,7 @@ class NerfSimulator(gym.Env):
             # convert to torch object
 
             # calculate uncertainty
-            _, sigma = uncertainty("Gaussian Approximation", output=self.filter.render_for_uncertainty(true_pose))
+            _, sigma = uncertainty("Gaussian Approximation", rendered_output=self.filter.render_for_uncertainty(true_pose))
             
             print("saving image files")
             gt_img_tuple = gt_img.cpu().detach().numpy()
