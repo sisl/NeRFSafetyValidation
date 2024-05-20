@@ -253,7 +253,8 @@ class Estimator():
 
         rays = self.get_rays(new_pose.reshape((1, 4, 4)))
 
-        output = self.render_fn(rays["rays_o"], rays["rays_d"])
+        with torch.no_grad():
+            output = self.render_fn(rays["rays_o"], rays["rays_d"])
 
         return output
 
