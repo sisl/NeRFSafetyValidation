@@ -48,7 +48,7 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
         with open(csv_file_path, 'r') as file:
             reader = csv.reader(file)
             for row in reader:
-                simulationNumber = row[0]
+                simulationNumber = int(row[0])
                 noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                 if simulationNumber not in simulationData:
                     simulationData[simulationNumber] = []
