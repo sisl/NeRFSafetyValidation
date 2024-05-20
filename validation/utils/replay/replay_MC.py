@@ -10,6 +10,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from validation.utils.blenderUtils import runBlenderOnFailure
+from validation.utils.fileUtils import load_counts, save_counts
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -60,8 +61,8 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
         os.remove("results/replays/collisionValuesReplay.csv")
 
     # counts
-    tp_count_step, tn_count_step, fp_count_step, fn_count_step = 0, 0, 0, 0
-    tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = 0, 0, 0, 0
+    counts_filename = 'counts.pkl'
+    tp_count_step, tn_count_step, fp_count_step, fn_count_step, tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = load_counts(counts_filename)
 
     # run replay validation
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed)
@@ -132,6 +133,9 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
             for outputStepList in outputSimulationList:
                 outputStepList.append(everCollided)
                 writer.writerow(outputStepList) 
+
+        counts = [tp_count_step, tn_count_step, fp_count_step, fn_count_step, tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj]
+        save_counts(counts, counts_filename)
 
     createConfusionMatrix(tp_count_step, tn_count_step, fp_count_step, fn_count_step, "step")
     createConfusionMatrix(tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj, "traj")
