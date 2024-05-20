@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 H = W = 800
 
 ####################### MAIN LOOP ##########################################
-def uncertainty(method, get_rays_fn, render_fn, path_to_images=None, pose=None):
+def uncertainty(method, path_to_images=None, rendered_output=None):
     """
     Compute the uncertainty using the specified method.
 
@@ -66,20 +66,12 @@ def uncertainty(method, get_rays_fn, render_fn, path_to_images=None, pose=None):
 
                 print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
         else:
-            # render the image using given pose
-            rays = get_rays_fn(pose)
-            rays_o = rays["rays_o"].reshape((H, W, -1))
-            rays_d = rays["rays_d"].reshape((H, W, -1))
-
-            with torch.no_grad():
-                output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
-
             # extract color/density values
-            c = output['rgbs']
-            d = output['sigmas']
+            c = rendered_output['rgbs']
+            d = rendered_output['sigmas']
 
             # extract rendered color
-            r = output['image']            
+            r = rendered_output['image']            
 
             # optimize parameters
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
@@ -376,7 +368,7 @@ if __name__ == "__main__":
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
   
-    uncertainty(uq_method, get_rays_fn, render_fn, path_to_images=os.path.join(opt.path, "train"))
+    uncertainty(uq_method, path_to_images=os.path.join(opt.path, "train"))
   
     end_text = 'End of uncertainty computation'
     print(f'{end_text:.^20}')

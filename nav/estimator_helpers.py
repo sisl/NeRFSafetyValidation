@@ -241,6 +241,21 @@ class Estimator():
         rgb = torch.squeeze(output['image'])
 
         return rgb
+    
+    def render_for_uncertainty(self, pose):
+        rot = rot_x(torch.tensor(np.pi/2)) @ pose[:3, :3]
+        trans = pose[:3, 3]
+        pose, trans = nerf_matrix_to_ngp_torch(rot, trans)
+
+        new_pose = torch.eye(4)
+        new_pose[:3, :3] = pose
+        new_pose[:3, 3] = trans
+
+        rays = self.get_rays(new_pose.reshape((1, 4, 4)))
+
+        output = self.render_fn(rays["rays_o"], rays["rays_d"])
+
+        return output
 
     def estimate_state(self, sensor_img, obs_img_pose, action):
         # Computes Jacobian w.r.t dynamics are time t-1. Then update state covariance Sig_{t|t-1}.
