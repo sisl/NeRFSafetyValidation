@@ -30,6 +30,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
         print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
         if path_to_images is not None:
             for i, image_name in enumerate(os.listdir(path_to_images)):
+                # OFFLINE METHOD
 
                 # load corresponding camera parameters
                 image_name = f'./train/{image_name}'
@@ -66,6 +67,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
 
                 print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
         else:
+            # ONLINE METHOD
             # extract color/density values
             c = rendered_output['rgbs']
             d = rendered_output['sigmas']
@@ -88,6 +90,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
         path_to_images = os.path.join(opt.path, "train")
         for i, image_name in enumerate(os.listdir(path_to_images)):
+            # OFFLINE METHOD
 
             # load corresponding camera parameters
             image_name = f'./train/{image_name}'
