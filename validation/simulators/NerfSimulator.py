@@ -164,10 +164,10 @@ class NerfSimulator(gym.Env):
         Returns:
         float: The computed reward.
         """
-        penalty_strength = 1.0
+        penalty_strength = 34.0 # equiv to likely disturbance 
 
-        # reward is directly proportional to the likelihood and inversely proportional to the uncertainty
-        reward = likelihood / (1.0 + penalty_strength * sigma_d_opt)
+        # reward is directly proportional to the likelihood and decreases with increasing uncertainty
+        reward = likelihood - penalty_strength * sigma_d_opt
 
         return reward
 
