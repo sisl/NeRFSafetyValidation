@@ -70,8 +70,9 @@ class MonteCarlo(object):
                 outputStepList.append(simTrajLogLikelihood)
 
                 if isinstance(self.simulator, NerfSimulator):
-                    # calculate and handle reward
+                    # calculate and handle reward/sigma
                     outputStepList.append(reward)
+                    outputStepList.append(sigma_d_opt)
                     reward = self.simulator.reward(curLogLikelihood, sigma_d_opt)
                 
                 # output the collision value
@@ -98,6 +99,7 @@ class MonteCarlo(object):
             18: step trajectory likelihood
             19: cumulative trajectory likelihood
             20: reward applied to this step
+            21: sigma value (uncertainty) for this step
             21: did we collide on this step
             22: did we collide on this simulation (added post facto)
             
