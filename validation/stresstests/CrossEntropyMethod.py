@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from scipy.special import logsumexp
 from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
+from validation.simulators.NerfSimulator import NerfSimulator
 from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -84,6 +85,7 @@ class CrossEntropyMethod:
 
                 pCumulative = 0
                 qCumulative = 0
+                reward = 0
 
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
@@ -93,6 +95,9 @@ class CrossEntropyMethod:
 
                 for stepNumber in range(self.steps):
                     outputStepList = [k, simulationNumber, stepNumber] # list written to the CSV
+                if isinstance(self.simulator, NerfSimulator):
+                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noises[stepNumber], reward)
+                else:
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
                     if self.TOY_PROBLEM:
@@ -115,6 +120,13 @@ class CrossEntropyMethod:
                     outputStepList.append(qStep.item())
                     outputStepList.append(pCumulative.item())
                     outputStepList.append(qCumulative.item())
+
+                    if isinstance(self.simulator, NerfSimulator):
+                        # calculate and handle reward/sigma
+                        outputStepList.append(reward)
+                        outputStepList.append(sigma_d_opt)
+                        curLogLikelihood = self.p.distributions[stepNumber].log_prob(elite_samples[:, stepNumber]).mean()
+                        reward = self.simulator.reward(curLogLikelihood, sigma_d_opt)
 
                     # append the value of the step to the simulation data
                     outputSimulationList.append(outputStepList)
