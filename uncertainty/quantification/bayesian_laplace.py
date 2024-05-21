@@ -79,6 +79,9 @@ class BayesianLaplace:
         start = 0
         for param in self.model.sigma_net.parameters():
             end = start + param.numel()
-            new_vals = torch.from_numpy(updated[start:end]).view(param.shape)
+            if isinstance(updated, np.ndarray):
+                new_vals = torch.from_numpy(updated[start:end]).view(param.shape)
+            else:  # Assuming it's already a PyTorch tensor
+                new_vals = updated[start:end].view(param.shape)
             param.data.copy_(new_vals)
             start = end
