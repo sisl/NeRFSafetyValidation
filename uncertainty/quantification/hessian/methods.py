@@ -16,10 +16,7 @@ def finite_difference(x, func, epsilon):
         Returns:
         hessian: the approximated Hessian matrix.
         """
-        if isinstance(x, np.ndarray):
-            n = x.size
-        else:
-            n = x.numel()
+        n = x.numel()
         size = x.size()
         hessian = torch.zeros(n, n)
         xt = x.clone().detach()

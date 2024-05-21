@@ -52,7 +52,8 @@ class BayesianLaplace:
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
         self.set_sigma_net_params(res.x)
         self.posterior_mean = res.x
-        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res.x))
+        res_tensor = torch.from_numpy(res.x)
+        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
         return self
 
 
