@@ -57,7 +57,7 @@ class BayesianLaplace:
 
 
     def predict(self, X):
-        return self.model.forward(X)[0]
+        return self.model.forward(X)
 
     def get_posterior_mean(self):
         return self.posterior_mean
