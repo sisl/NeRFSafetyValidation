@@ -69,10 +69,13 @@ class BayesianLaplace:
         self.set_sigma_net_params(res.x)
         self.posterior_mean = res.x
         res_tensor = torch.from_numpy(res.x)
-        self.X = X
-        self.y = y
-        self.posterior_cov = np.linalg.inv(self.hessian_negative_log_posterior(res.x, X, y))
-        #self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
+        # self.X = X
+        # self.y = y
+        self.X = torch.tensor(X)
+        self.y = torch.tensor(y)
+        # self.posterior_cov = np.linalg.inv(self.hessian_negative_log_posterior(res.x, X, y))
+        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
+        print('REACHED BEYOND POSTERIOR COV')
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):

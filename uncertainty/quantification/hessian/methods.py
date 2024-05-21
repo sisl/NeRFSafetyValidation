@@ -16,26 +16,20 @@ def finite_difference(x, func, epsilon):
         Returns:
         hessian: the approximated Hessian matrix.
         """
+        x.requires_grad_(True)
         n = x.numel()
-        size = x.size()
-        hessian = torch.zeros(n, n)
-        xt = x.clone().detach()
-        xt.requires_grad_(True)
-        f_x = func(xt)
-        if isinstance(f_x, float):
-            f_x = torch.tensor([f_x], dtype=torch.float32)
-        grad_x = torch.autograd.grad(f_x, xt, create_graph=True, allow_unused=True)[0]
-
+        hessian = torch.zeros((n, n))
         for i in range(n):
-            x_i = x.clone().detach()
-            x_i.requires_grad_(True)
-            x_i_plus_epsilon = x_i.clone()  # create a new tensor to avoid in-place operation
-            x_i_plus_epsilon[i] = x_i[i] + epsilon
-            f_x_i = func(x_i_plus_epsilon)
-            grad_x_i = torch.autograd.grad(f_x_i, x_i_plus_epsilon, create_graph=False, allow_unused=True)[0]
-            hessian[i] = (grad_x_i - grad_x) / epsilon
-
-        return hessian.view(*size, *size)
+            for j in range(n):
+                x_epsilon = x.detach().clone()
+                x_epsilon[i] += epsilon
+                x_epsilon[j] += epsilon
+                f_x_epsilon = func(x_epsilon)
+                if isinstance(f_x_epsilon, float):
+                    f_x_epsilon = torch.tensor([f_x_epsilon], dtype=torch.float32)
+                grad_x_epsilon = torch.autograd.grad(f_x_epsilon, x_epsilon, create_graph=True)[0]
+                hessian[i, j] = grad_x_epsilon[i] / (epsilon**2)
+        return hessian
 
 def lbfgs(x, func):
     """
