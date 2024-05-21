@@ -27,7 +27,7 @@ class BayesianLaplace:
 
     def log_likelihood(self, theta, X, y):
         self.set_sigma_net_params(theta)
-        y_pred = self.model.density(X)['sigma']
+        y_pred = self.model.density(X)['sigma'].view(-1, 1)
         #print(y_pred)
         return -0.5 * np.sum((y - y_pred)**2)
 
