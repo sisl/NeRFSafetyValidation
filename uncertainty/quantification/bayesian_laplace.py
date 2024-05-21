@@ -23,7 +23,7 @@ class BayesianLaplace:
         self.lr = lr
 
     def log_prior(self, theta):
-        return -0.5 * torch.sum((theta - self.prior_mean)**2 / self.prior_std**2)
+        return -0.5 * np.sum((theta - self.prior_mean)**2 / self.prior_std**2)
 
     def log_likelihood(self, theta, X, y):
         self.set_sigma_net_params(theta)
