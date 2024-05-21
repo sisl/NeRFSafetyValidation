@@ -50,6 +50,18 @@ class BayesianLaplace:
             grad[i] = (self.negative_log_posterior(theta_epsilon, X, y) - self.negative_log_posterior(theta, X, y)) / epsilon
             #print(theta_epsilon, grad[i])
         return grad
+    
+    def hessian_negative_log_posterior(self, theta, X, y):
+        epsilon = 1e-5
+        hessian = np.zeros((len(theta), len(theta)))
+        for i in range(len(theta)):
+            for j in range(len(theta)):
+                theta_epsilon = theta.copy()
+                theta_epsilon[i] += epsilon
+                theta_epsilon[j] += epsilon
+                hessian[i, j] = (self.negative_log_posterior(theta_epsilon, X, y) 
+                                 - self.negative_log_posterior(theta, X, y)) / (epsilon**2)
+        return hessian
 
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
@@ -59,7 +71,8 @@ class BayesianLaplace:
         res_tensor = torch.from_numpy(res.x)
         self.X = X
         self.y = y
-        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
+        self.posterior_cov = np.linalg.inv(self.hessian_negative_log_posterior(res.x, X, y))
+        #self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):
