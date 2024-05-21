@@ -19,8 +19,10 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
-        self.hessian_approximator = HessianApproximator(self.negative_log_posterior)
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper)
         self.lr = lr
+        self.X = None
+        self.y = None
 
     def log_prior(self, theta):
         return -0.5 * np.sum((theta - self.prior_mean)**2 / self.prior_std**2)
@@ -53,9 +55,13 @@ class BayesianLaplace:
         self.set_sigma_net_params(res.x)
         self.posterior_mean = res.x
         res_tensor = torch.from_numpy(res.x)
+        self.X = X
+        self.y = y
         self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
         return self
-
+    
+    def negative_log_posterior_hessian_wrapper(self, xt):
+        return self.negative_log_posterior(xt, self.X, self.y)
 
     def predict(self, X):
         return self.model.forward(X)
