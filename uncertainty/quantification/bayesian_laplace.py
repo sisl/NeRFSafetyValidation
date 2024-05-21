@@ -25,6 +25,8 @@ class BayesianLaplace:
         self.y = None
 
     def log_prior(self, theta):
+        if isinstance(theta, np.ndarray):
+            theta = torch.from_numpy(theta)
         return -0.5 * torch.sum((theta - self.prior_mean)**2 / self.prior_std**2)
 
     def log_likelihood(self, theta, X, y):
@@ -50,7 +52,7 @@ class BayesianLaplace:
         return grad
 
     def fit(self, X, y):
-        theta_init = torch.cat([param.detach().cpu().view(-1) for param in self.model.sigma_net.parameters()])
+        theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
         res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
         self.set_sigma_net_params(res.x)
         self.posterior_mean = res.x
