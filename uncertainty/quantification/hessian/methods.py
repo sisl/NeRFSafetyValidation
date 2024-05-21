@@ -22,6 +22,8 @@ def finite_difference(x, func, epsilon):
         xt = x.clone().detach()
         xt.requires_grad_(True)
         f_x = func(xt)
+        if isinstance(f_x, float):
+            f_x = torch.tensor([f_x], dtype=torch.float32)
         grad_x = torch.autograd.grad(f_x, xt, create_graph=True, allow_unused=True)[0]
 
         for i in range(n):
