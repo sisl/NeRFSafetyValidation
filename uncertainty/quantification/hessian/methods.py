@@ -22,6 +22,8 @@ def finite_difference(x, func, epsilon):
         xt = x.clone().detach()
         xt.requires_grad_(True)
         f_x = func(xt)
+        if isinstance(f_x_epsilon, float):
+            f_x_epsilon = torch.tensor([f_x_epsilon], dtype=torch.float32)
         grad_x = torch.autograd.grad(f_x, xt, create_graph=True, allow_unused=True)[0]
 
         for i in range(n):
@@ -31,6 +33,8 @@ def finite_difference(x, func, epsilon):
                 x_i_plus_epsilon = x_i.clone()  # create a new tensor to avoid in-place operation
                 x_i_plus_epsilon[i] = x_i[i] + epsilon
                 f_x_i = func(x_i_plus_epsilon)
+                if isinstance(f_x_epsilon, float):
+                    f_x_epsilon = torch.tensor([f_x_epsilon], dtype=torch.float32)
                 grad_x_i = torch.autograd.grad(f_x_i, x_i_plus_epsilon, create_graph=False, allow_unused=True)[0]
                 hessian[i, j] = (grad_x_i[i] - grad_x) / epsilon
 
