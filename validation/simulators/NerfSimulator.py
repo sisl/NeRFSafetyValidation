@@ -142,7 +142,7 @@ class NerfSimulator(gym.Env):
 
                 if collided:
                     print(f"Drone collided in state {current_state}")
-                    return collided, collisionVal, current_state[:3]
+                    return collided, collisionVal, current_state[:3], sigma
                 else:
                     print(f"Drone did NOT collide in state {current_state}")
 
