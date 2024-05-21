@@ -72,7 +72,7 @@ class MonteCarlo(object):
                 if isinstance(self.simulator, NerfSimulator):
                     # calculate and handle reward
                     outputStepList.append(reward)
-                    reward = self.simulator.reward(simTrajLogLikelihood, sigma_d_opt)
+                    reward = self.simulator.reward(curLogLikelihood, sigma_d_opt)
                 
                 # output the collision value
                 outputStepList.append(isCollision)
