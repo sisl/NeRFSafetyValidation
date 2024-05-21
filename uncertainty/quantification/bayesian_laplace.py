@@ -35,7 +35,7 @@ class BayesianLaplace:
         return self.log_prior(theta) + self.log_likelihood(theta, X, y)
 
     def negative_log_posterior(self, theta, X, y):
-        return -self.log_posterior(theta, X, y)
+        return -self.log_posterior(theta, X, y).item()
 
     def grad_negative_log_posterior(self, theta, X, y):
         epsilon = 1e-5
