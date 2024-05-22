@@ -39,10 +39,7 @@ class BayesianLaplace:
         return self.log_prior(theta) + self.log_likelihood(theta, X, y)
 
     def negative_log_posterior(self, theta, X, y):
-        nlp = self.log_posterior(theta, X, y)
-        if isinstance(nlp, float):
-            nlp = torch.tensor([nlp], dtype=torch.float32, requires_grad=True)
-        return -nlp
+        return -self.log_posterior(theta, X, y)
 
     def grad_negative_log_posterior(self, theta, X, y):
         epsilon = 1e-5
@@ -68,16 +65,21 @@ class BayesianLaplace:
 
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
-        res = minimize(self.negative_log_posterior, theta_init, args=(X, y), jac=self.grad_negative_log_posterior)
-        self.set_sigma_net_params(res.x)
-        self.posterior_mean = res.x
-        res_tensor = torch.from_numpy(res.x)
-        # self.X = X
-        # self.y = y
+        theta_init = torch.tensor(theta_init, requires_grad=True)  # Convert to PyTorch tensor
+
+        optimizer = torch.optim.Adam([theta_init], lr=self.lr)  # Use PyTorch's Adam optimizer
+
+        for _ in range(1000):  # Number of optimization steps
+            optimizer.zero_grad()
+            loss = self.negative_log_posterior(theta_init, X, y)
+            loss.backward()
+            optimizer.step()
+
+        self.set_sigma_net_params(theta_init.detach().cpu().numpy())
+        self.posterior_mean = theta_init.detach().cpu().numpy()
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
-        # self.posterior_cov = np.linalg.inv(self.hessian_negative_log_posterior(res.x, X, y))
-        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(res_tensor))
+        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(theta_init))
         print('REACHED BEYOND POSTERIOR COV')
         return self
     
