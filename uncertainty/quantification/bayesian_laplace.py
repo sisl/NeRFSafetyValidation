@@ -70,19 +70,14 @@ class BayesianLaplace:
                 minTheta = theta_init
 
         theta_init = minTheta
-        print(minLoss)
-        print(minTheta)
         self.set_sigma_net_params(theta_init.detach().cpu().numpy())
         self.posterior_mean = theta_init.detach().cpu().numpy()
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
         hessian = self.hessian_approximator.compute(theta_init)
-        print(hessian)
-        reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-3  # Tikhonov regularization
+        reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-7  # Tikhonov regularization
         hessian += reg_term
-        print(hessian)
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
-        print('REACHED BEYOND POSTERIOR COV')
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):
