@@ -136,13 +136,13 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             print(trace, determinant, max_eigenvalue)
 
             # check for absolute certain/uncertain values
-            if pos_cov <= 0:
-                ac += 1
-            elif pos_cov >= 3:
-                au += 1
-            else:
-                results["pos_mu"].append(pos_mu)
-                results["pos_cov"].append(pos_cov)
+            # if pos_cov <= 0:
+            #     ac += 1
+            # elif pos_cov >= 3:
+            #     au += 1
+            # else:
+            results["pos_mu"].append(pos_mu)
+            results["pos_cov"].append(pos_cov)
 
             print(f"Image #{i} ({image_name}): pos_mu = {pos_mu}, pos_cov = {pos_cov}")
         create_heatmap(results["pos_mu"], results["pos_cov"])
