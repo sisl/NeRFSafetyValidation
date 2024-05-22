@@ -79,7 +79,8 @@ class BayesianLaplace:
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):
-        return self.negative_log_posterior(xt, self.X, self.y)
+        nlp = self.negative_log_posterior(xt, self.X, self.y)
+        return torch.tensor([nlp], dtype=torch.float32) if isinstance(nlp, float) else nlp
 
     def predict(self, X):
         return self.model.forward(X)
