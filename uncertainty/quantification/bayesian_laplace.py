@@ -19,7 +19,7 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
-        self.hessian_approximator = HessianApproximator(self.negative_log_posterior)
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper)
         self.lr = lr
         self.X = None
         self.y = None
@@ -39,7 +39,10 @@ class BayesianLaplace:
         return self.log_prior(theta) + self.log_likelihood(theta, X, y)
 
     def negative_log_posterior(self, theta, X, y):
-        return -self.log_posterior(theta, X, y).item()
+        nlp = self.log_posterior(theta, X, y)
+        if isinstance(nlp, float):
+            nlp = torch.tensor([nlp], dtype=torch.float32, requires_grad=True)
+        return -nlp
 
     def grad_negative_log_posterior(self, theta, X, y):
         epsilon = 1e-5
@@ -79,8 +82,7 @@ class BayesianLaplace:
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):
-        nlp = self.negative_log_posterior(xt, self.X, self.y)
-        return torch.tensor([nlp], dtype=torch.float32) if isinstance(nlp, float) else nlp
+        return self.negative_log_posterior(xt, self.X, self.y)
 
     def predict(self, X):
         return self.model.forward(X)

@@ -4,13 +4,12 @@ from torch.optim import LBFGS
 from sklearn.linear_model import LinearRegression, Ridge
 
 
-def finite_difference(x, X, y, func, epsilon=1e-5):
+def finite_difference(x, func, epsilon):
         """
         Approximate the Hessian using the finite difference method.
 
         Parameters:
         x: the point at which to compute the Hessian.
-        X, y: additional arguments for negative_log_posterior function.
         func (function): The function whose gradient is to be estimated.
         epsilon: constant to be added
 
@@ -22,7 +21,7 @@ def finite_difference(x, X, y, func, epsilon=1e-5):
         hessian = torch.zeros((n, n))
         xt = x.clone().detach()
         xt.requires_grad_(True)
-        f_x = func(xt, X, y)
+        f_x = func(xt)
         if isinstance(f_x, float):
             f_x = torch.tensor([f_x], dtype=torch.float32)
             f_x.requires_grad_(True)
@@ -34,7 +33,7 @@ def finite_difference(x, X, y, func, epsilon=1e-5):
                 x_i.requires_grad_(True)
                 x_i_plus_epsilon = x_i.clone()  # create a new tensor to avoid in-place operation
                 x_i_plus_epsilon[i] = x_i[i] + epsilon
-                f_x_i = func(x_i_plus_epsilon, X, y)
+                f_x_i = func(x_i_plus_epsilon)
                 if isinstance(f_x_i, float):
                     f_x_i = torch.tensor([f_x_i], dtype=torch.float32)
                     f_x_i.requires_grad_(True)
