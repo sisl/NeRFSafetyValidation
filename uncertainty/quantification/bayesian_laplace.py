@@ -19,7 +19,7 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
-        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper)
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper, method='bfgs')
         self.lr = lr
         self.X = None
         self.y = None
@@ -60,7 +60,7 @@ class BayesianLaplace:
         optimizer = torch.optim.Adam([theta_init], lr=self.lr)
 
         minLoss, minTheta = float('inf'), theta_init
-        for _ in range(1000):  # Number of optimization steps
+        for _ in range(1000):
             optimizer.zero_grad()
             loss = self.negative_log_posterior(theta_init, X, y)
             loss.backward()
@@ -76,7 +76,12 @@ class BayesianLaplace:
         self.posterior_mean = theta_init.detach().cpu().numpy()
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
-        self.posterior_cov = np.linalg.inv(self.hessian_approximator.compute(theta_init))
+        hessian = self.hessian_approximator.compute(theta_init)
+        print(hessian)
+        reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-3  # Tikhonov regularization
+        hessian += reg_term
+        print(hessian)
+        self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
         print('REACHED BEYOND POSTERIOR COV')
         return self
     
