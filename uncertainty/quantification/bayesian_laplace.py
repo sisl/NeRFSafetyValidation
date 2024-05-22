@@ -19,7 +19,7 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
-        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper, method='bfgs')
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper, method='levenberg_marquardt')
         self.lr = lr
         self.X = None
         self.y = None
@@ -75,7 +75,7 @@ class BayesianLaplace:
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
         hessian = self.hessian_approximator.compute(theta_init)
-        reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-7  # Tikhonov regularization
+        reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-1  # Tikhonov regularization
         hessian += reg_term
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
         return self
