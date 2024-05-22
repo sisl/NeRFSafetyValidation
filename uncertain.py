@@ -123,17 +123,20 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             pos_mu = bayesian_laplace.get_posterior_mean()
             pos_cov = bayesian_laplace.get_posterior_cov()
 
+            mean_of_means = np.mean(mu_d_opt)
+            std_dev_of_means = np.std(mu_d_opt)
+
             # Trace of the covariance matrix
             trace = np.trace(pos_cov)
-
-            # Determinant of the covariance matrix
-            determinant = np.linalg.det(pos_cov)
 
             # Maximum eigenvalue of the covariance matrix
             max_eigenvalue = np.max(np.linalg.eigvals(pos_cov))
 
-            print("TRACE, DETERMINANT, MAX EIGENVAL")
-            print(trace, determinant, max_eigenvalue)
+            print("MoM AND STD DEV")
+            print(mean_of_means, std_dev_of_means)
+
+            print("TRACE AND MAX EIGENVAL")
+            print(trace, max_eigenvalue)
 
             # check for absolute certain/uncertain values
             # if pos_cov <= 0:
