@@ -19,7 +19,7 @@ class BayesianLaplace:
         self.model = model
         self.prior_mean = prior_mean
         self.prior_std = prior_std
-        self.hessian_approximator = HessianApproximator(self.negative_log_posterior_hessian_wrapper)
+        self.hessian_approximator = HessianApproximator(self.negative_log_posterior)
         self.lr = lr
         self.X = None
         self.y = None
