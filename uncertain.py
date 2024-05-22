@@ -23,11 +23,11 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
     Parameters:
     method (str): Name of the uncertainty computation method.
     """
-    results = {"optimized_mu_d": [], "optimized_sigma_d": []}
-    varNames = ["optimized_mu_d", "optimized_sigma_d"]
     ac, au = 0, 0
     if method == "Gaussian Approximation":
         print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
+        results = {"optimized_mu_d": [], "optimized_sigma_d": []}
+        varNames = ["optimized_mu_d", "optimized_sigma_d"]
         if path_to_images is not None:
             for i, image_name in enumerate(os.listdir(path_to_images)):
                 # OFFLINE METHOD
@@ -81,13 +81,12 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
 
             print(f"mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
             return mu_d_opt, sigma_d_opt
-        
-        print(f'Number of absolute certain sigma_d values: {ac}')
-        print(f'Number of absolute uncertain sigma_d values: {au}')
         create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
 
     elif method == "Bayesian Laplace Approximation":
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
+        results = {"pos_mu": [], "pos_cov": []}
+        varNames = ["pos_mu", "pos_cov"]
         path_to_images = os.path.join(opt.path, "train")
         for i, image_name in enumerate(os.listdir(path_to_images)):
             # OFFLINE METHOD
@@ -121,28 +120,39 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             bayesian_laplace.fit(c, d)
 
             # get optimized parameters
-            mu_d_opt = bayesian_laplace.get_posterior_mean()
-            sigma_d_opt = bayesian_laplace.get_posterior_cov()
+            pos_mu = bayesian_laplace.get_posterior_mean()
+            pos_cov = bayesian_laplace.get_posterior_cov()
+
+            # Trace of the covariance matrix
+            trace = np.trace(pos_cov)
+
+            # Determinant of the covariance matrix
+            determinant = np.linalg.det(pos_cov)
+
+            # Maximum eigenvalue of the covariance matrix
+            max_eigenvalue = np.max(np.linalg.eigvals(pos_cov))
+
+            print("TRACE, DETERMINANT, MAX EIGENVAL")
+            print(trace, determinant, max_eigenvalue)
 
             # check for absolute certain/uncertain values
-            if sigma_d_opt <= 0:
+            if pos_cov <= 0:
                 ac += 1
-            elif sigma_d_opt >= 3:
+            elif pos_cov >= 3:
                 au += 1
             else:
-                results["optimized_mu_d"].append(mu_d_opt)
-                results["optimized_sigma_d"].append(sigma_d_opt)
+                results["pos_mu"].append(pos_mu)
+                results["pos_cov"].append(pos_cov)
 
-            print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
-        
-        print(f'Number of absolute certain sigma_d values: {ac}')
-        print(f'Number of absolute uncertain sigma_d values: {au}')
-        create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
+            print(f"Image #{i} ({image_name}): pos_mu = {pos_mu}, pos_cov = {pos_cov}")
+        create_heatmap(results["pos_mu"], results["pos_cov"])
     else:
         print(f"Unrecognized uncertainty quantification method {method}")
         exit()
 
     # visualize uncertainty
+    print(f'Number of absolute certain values: {ac}')
+    print(f'Number of absolute uncertain values: {au}')
     for varName in varNames:
         plt.hist(results[varName], bins=50)
         plt.xlabel(f'Uncertainty ({varName})')
