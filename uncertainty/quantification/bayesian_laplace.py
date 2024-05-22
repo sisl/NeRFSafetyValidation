@@ -50,31 +50,28 @@ class BayesianLaplace:
             grad[i] = (self.negative_log_posterior(theta_epsilon, X, y) - self.negative_log_posterior(theta, X, y)) / epsilon
             #print(theta_epsilon, grad[i])
         return grad
-    
-    def hessian_negative_log_posterior(self, theta, X, y):
-        epsilon = 1e-5
-        hessian = np.zeros((len(theta), len(theta)))
-        for i in range(len(theta)):
-            for j in range(len(theta)):
-                theta_epsilon = theta.copy()
-                theta_epsilon[i] += epsilon
-                theta_epsilon[j] += epsilon
-                hessian[i, j] = (self.negative_log_posterior(theta_epsilon, X, y) 
-                                 - self.negative_log_posterior(theta, X, y)) / (epsilon**2)
-        return hessian
 
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
-        theta_init = torch.tensor(theta_init, requires_grad=True)  # Convert to PyTorch tensor
+        theta_init = torch.tensor(theta_init, requires_grad=True).cuda()
+        X = torch.tensor(X).cuda()
+        y = torch.tensor(y).cuda()
 
-        optimizer = torch.optim.Adam([theta_init], lr=self.lr)  # Use PyTorch's Adam optimizer
+        optimizer = torch.optim.Adam([theta_init], lr=self.lr)
 
+        minLoss, minTheta = float('inf'), theta_init
         for _ in range(1000):  # Number of optimization steps
             optimizer.zero_grad()
             loss = self.negative_log_posterior(theta_init, X, y)
             loss.backward()
             optimizer.step()
+            if loss < minLoss:
+                minLoss = loss
+                minTheta = theta_init
 
+        theta_init = minTheta
+        print(minLoss)
+        print(minTheta)
         self.set_sigma_net_params(theta_init.detach().cpu().numpy())
         self.posterior_mean = theta_init.detach().cpu().numpy()
         self.X = torch.tensor(X)
