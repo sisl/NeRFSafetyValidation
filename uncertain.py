@@ -123,8 +123,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             pos_mu = bayesian_laplace.get_posterior_mean()
             pos_cov = bayesian_laplace.get_posterior_cov()
 
-            mean_of_means = np.mean(mu_d_opt)
-            std_dev_of_means = np.std(mu_d_opt)
+            mean_of_means = np.mean(pos_mu)
+            std_dev_of_means = np.std(pos_mu)
 
             # Trace of the covariance matrix
             trace = np.trace(pos_cov)
