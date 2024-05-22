@@ -38,7 +38,7 @@ def finite_difference(x, func, epsilon):
                     f_x_i = torch.tensor([f_x_i], dtype=torch.float32)
                     f_x_i.requires_grad_(True)
                 grad_x_i = torch.autograd.grad(f_x_i, x_i_plus_epsilon, create_graph=False, allow_unused=True)[0]
-                hessian[i, j] = (grad_x_i[i] - grad_x) / epsilon
+                hessian[i, j] = (grad_x_i - grad_x) / epsilon
 
         return hessian
 
