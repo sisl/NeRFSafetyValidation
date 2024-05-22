@@ -137,6 +137,9 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
 
             print("TRACE AND MAX EIGENVAL")
             print(trace, max_eigenvalue)
+            std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov)))
+            print("STD DEV OF UNCERTAINTY")
+            print(std_dev_uncertainty)
 
             # check for absolute certain/uncertain values
             # if pos_cov <= 0:
