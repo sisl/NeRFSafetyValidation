@@ -71,7 +71,7 @@ class BayesianLaplace:
         num_perturbations = 10
         perturbation_scale = 0.1
         perturbations = torch.randn((num_perturbations, len(theta_init)), device='cuda') * perturbation_scale
-        theta_init_perturbed = theta_init.unsqueeze(0) + perturbations
+        theta_init_perturbed = (theta_init.unsqueeze(0) + perturbations).detach().requires_grad_()
 
         minLoss, minTheta = float('inf'), theta_init
         for theta in theta_init_perturbed:
