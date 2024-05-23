@@ -75,15 +75,16 @@ class BayesianLaplace:
 
         minLoss, minTheta = float('inf'), theta_init
         for X_p in X_perturbed:
-            optimizer = torch.optim.Adam([theta_init], lr=self.lr)
+            theta = theta_init.clone().detach().requires_grad_(True)  # Create a copy of theta_init for each X_p
+            optimizer = torch.optim.Adam([theta], lr=self.lr)
             for _ in range(1000):
                 optimizer.zero_grad()
-                loss = self.negative_log_posterior(theta_init, X_p, y)
+                loss = self.negative_log_posterior(theta, X_p, y)
                 loss.backward()
                 optimizer.step()
                 if loss < minLoss:
                     minLoss = loss
-                    minTheta = theta_init
+                    minTheta = theta
 
         self.set_sigma_net_params(minTheta.detach().cpu().numpy())
         self.posterior_mean = minTheta.detach().cpu().numpy()
