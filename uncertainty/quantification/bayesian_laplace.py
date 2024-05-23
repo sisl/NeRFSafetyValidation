@@ -1,9 +1,19 @@
 import numpy as np
-from scipy.optimize import minimize
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
+class SpatialDeformationLayer(nn.Module):
+    def __init__(self, grid_size):
+        super().__init__()
+        self.grid_size = grid_size
+        self.deformation_grid = nn.Parameter(torch.randn(grid_size, grid_size, grid_size, 3) * 0.1)
+
+    def forward(self, x):
+        return F.grid_sample(x.unsqueeze(0), self.deformation_grid.unsqueeze(0)).squeeze(0)
+    
 class BayesianLaplace:
     def __init__(self, model, prior_mean, prior_std, lr):
         """
@@ -57,29 +67,28 @@ class BayesianLaplace:
         X = torch.tensor(X).cuda()
         y = torch.tensor(y).cuda()
 
-        # perturbations
-        num_perturbations = 10
-        perturbation_scale = 0.1
-        perturbations = torch.randn((num_perturbations, len(theta_init)), device='cuda') * perturbation_scale
-        theta_init_perturbed = theta_init.unsqueeze(0) + perturbations
+        # Initialize the spatial deformation layer
+        deformation_layer = SpatialDeformationLayer(grid_size=16).cuda()
+
+        optimizer = torch.optim.Adam([theta_init, deformation_layer.deformation_grid], lr=self.lr)
 
         minLoss, minTheta = float('inf'), theta_init
-        for theta in theta_init_perturbed:
-            optimizer = torch.optim.Adam([theta], lr=self.lr)
-            for _ in range(1000):
-                optimizer.zero_grad()
-                loss = self.negative_log_posterior(theta, X, y)
-                loss.backward()
-                optimizer.step()
-                if loss < minLoss:
-                    minLoss = loss
-                    minTheta = theta
+        for _ in range(1000):
+            optimizer.zero_grad()
+            X_deformed = deformation_layer(X)
+            loss = self.negative_log_posterior(theta_init, X_deformed, y)
+            loss.backward()
+            optimizer.step()
+            if loss < minLoss:
+                minLoss = loss
+                minTheta = theta_init
 
-        self.set_sigma_net_params(minTheta.detach().cpu().numpy())
-        self.posterior_mean = minTheta.detach().cpu().numpy()
+        theta_init = minTheta
+        self.set_sigma_net_params(theta_init.detach().cpu().numpy())
+        self.posterior_mean = theta_init.detach().cpu().numpy()
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
-        hessian = self.hessian_approximator.compute(minTheta)
+        hessian = self.hessian_approximator.compute(theta_init)
         reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-2  # Tikhonov regularization
         hessian += reg_term
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
