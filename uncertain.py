@@ -100,16 +100,13 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             rays = get_rays_fn(cam_param)
             rays_o = rays["rays_o"].reshape((H, W, -1))
             rays_d = rays["rays_d"].reshape((H, W, -1))
+            X = torch.cat([rays_o, rays_d], dim=-1)  # X is now a [N, 5] tensor representing the 5D coordinates
 
             with torch.no_grad():
                 output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
-            # extract color/density values
-            c = output['rgbs']
-            d = output['sigmas']
-
-            # extract rendered color
-            r = output['image']            
+            # extract density values
+            d = output['sigmas']           
 
             # initialize BayesianLaplace object
             prior_mean = 0.0
@@ -117,7 +114,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             bayesian_laplace = BayesianLaplace(model, prior_mean, prior_std, opt.lr)
 
             # fit the model
-            bayesian_laplace.fit(c, d)
+            bayesian_laplace.fit(X, d)
 
             # get optimized parameters
             pos_mu = bayesian_laplace.get_posterior_mean()
