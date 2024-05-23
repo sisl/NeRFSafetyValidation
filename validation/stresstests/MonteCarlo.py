@@ -30,6 +30,7 @@ class MonteCarlo(object):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
 
         likelihoods = norm.pdf(noise, loc = self.noise_mean_cpu, scale = self.noise_std_cpu)
+        likelihoods = np.clip(likelihoods, 1e-8, 1e8)
         logLikelihoods = np.log(likelihoods)
         return logLikelihoods.sum()
 
@@ -44,9 +45,10 @@ class MonteCarlo(object):
 
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
-                adjusted_noise_mean = self.noise_mean + reward
-                noise = torch.normal(adjusted_noise_mean, self.noise_std, generator=self.noise_seed)
-                noise = torch.normal(self.noise_mean, self.noise_std, generator=self.noise_seed)
+                scaling_factor = 0.1 * self.noise_std
+                scaled_reward = reward * scaling_factor
+                adjusted_noise_std = self.noise_std + scaled_reward
+                noise = torch.normal(self.noise_mean, adjusted_noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
                 if isinstance(self.simulator, NerfSimulator):
                     isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noise, reward)
