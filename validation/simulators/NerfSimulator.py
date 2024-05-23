@@ -123,7 +123,7 @@ class NerfSimulator(gym.Env):
             self.traj.update_state(state_est)
 
             # Replan from the state estimate
-            self.traj.learn_update(self.iter, reward)            
+            self.traj.learn_update(self.iter)            
 
             collisionVal = 9999
 

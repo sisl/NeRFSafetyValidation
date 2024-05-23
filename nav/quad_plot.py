@@ -248,19 +248,18 @@ class Planner:
         #PARAM cost function shaping
         return 1000*fz**2 + 0.01*torques**4 + colision_prob * 1e6, colision_prob*1e6
 
-    def total_cost(self, reward):
+    def total_cost(self):
         total_cost, colision_loss  = self.get_state_cost()
-        total_cost -= reward
         return torch.mean(total_cost)
 
-    def learn_init(self, reward):
+    def learn_init(self):
         opt = torch.optim.Adam(self.params(), lr=self.lr, capturable=True)
 
         try:
             for it in range(self.epochs_init):
                 opt.zero_grad()
                 self.epoch = it
-                loss = self.total_cost(reward)
+                loss = self.total_cost()
                 print(it, loss)
                 loss.backward()
                 opt.step()
@@ -276,13 +275,13 @@ class Planner:
         except KeyboardInterrupt:
             print("finishing early")
 
-    def learn_update(self, iteration, reward):
+    def learn_update(self, iteration):
         opt = torch.optim.Adam(self.params(), lr=self.lr, capturable=True)
 
         for it in range(self.epochs_update):
             opt.zero_grad()
             self.epoch = it
-            loss = self.total_cost(reward)
+            loss = self.total_cost()
             if it % 50 == 0:
                 print(it, loss)
             loss.backward()
