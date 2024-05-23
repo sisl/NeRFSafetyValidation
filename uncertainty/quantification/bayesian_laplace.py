@@ -31,7 +31,7 @@ class BayesianLaplace:
 
     def log_likelihood(self, theta, X, y):
         self.set_sigma_net_params(theta)
-        y_pred = self.model.density(X)['sigma'].view(-1, 1)
+        y_pred = self.model.density(X)['sigma'].view(1, -1)
         #print(y_pred)
         return -0.5 * torch.sum((y - y_pred)**2)
 
