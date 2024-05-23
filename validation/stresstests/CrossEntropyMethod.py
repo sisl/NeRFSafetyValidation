@@ -96,7 +96,7 @@ class CrossEntropyMethod:
                 for stepNumber in range(self.steps):
                     outputStepList = [k, simulationNumber, stepNumber] # list written to the CSV
                 if isinstance(self.simulator, NerfSimulator):
-                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noises[stepNumber], reward)
+                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noises[stepNumber])
                 else:
                     isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 

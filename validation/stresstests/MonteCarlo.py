@@ -42,16 +42,17 @@ class MonteCarlo(object):
             everCollided = False
             simTrajLogLikelihood = 0
             reward = 0
+            noise_std = self.noise_std
 
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
-                scaling_factor = 0.1 * self.noise_std
+                scaling_factor = 0.01 * noise_std
                 scaled_reward = reward * scaling_factor
-                adjusted_noise_std = self.noise_std + scaled_reward
+                adjusted_noise_std = noise_std + scaled_reward
                 noise = torch.normal(self.noise_mean, adjusted_noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
                 if isinstance(self.simulator, NerfSimulator):
-                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noise, reward)
+                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noise)
                 else:
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
                 outputStepList = [simulationNumber, stepNumber]

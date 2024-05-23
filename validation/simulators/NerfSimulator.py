@@ -60,7 +60,7 @@ class NerfSimulator(gym.Env):
         self.seed = seed
 
 
-    def step(self, disturbance, reward, num_interpolated_points=4):
+    def step(self, disturbance, num_interpolated_points=4):
         """
         Run one timestep of the environment's dynamics. The agent performs the action recommended by the planner,
         subject to the provided disturbance. The function also checks for collisions and updates the state estimate.
@@ -164,7 +164,7 @@ class NerfSimulator(gym.Env):
         Returns:
         float: The computed reward.
         """
-        penalty_strength = 30.0 # equiv to somewhat likely disturbance 
+        penalty_strength = 36.0 # slightly above likely disturbance 
 
         # reward is directly proportional to the likelihood and decreases with increasing uncertainty
         reward = likelihood - penalty_strength * sigma_d_opt
