@@ -67,14 +67,16 @@ class BayesianLaplace:
         X = torch.tensor(X).cuda()
         y = torch.tensor(y).cuda()
 
-        # perturbations
-        num_perturbations = 10
-        perturbation_scale = 0.1
+        num_perturbations = 10  # Number of perturbations
+        perturbation_scale = 0.1  # Scale of the perturbations
+
+        # Create perturbations
         perturbations = torch.randn((num_perturbations, len(theta_init)), device='cuda') * perturbation_scale
-        theta_init_perturbed = (theta_init.unsqueeze(0) + perturbations).detach().requires_grad_()
+        theta_init_perturbed = theta_init.clone().unsqueeze(0) + perturbations
 
         minLoss, minTheta = float('inf'), theta_init
         for theta in theta_init_perturbed:
+            theta = theta.clone().detach().requires_grad_(True)
             optimizer = torch.optim.Adam([theta], lr=self.lr)
             for _ in range(1000):
                 optimizer.zero_grad()
@@ -94,6 +96,7 @@ class BayesianLaplace:
         hessian += reg_term
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
         return self
+
 
     
     def negative_log_posterior_hessian_wrapper(self, xt):
