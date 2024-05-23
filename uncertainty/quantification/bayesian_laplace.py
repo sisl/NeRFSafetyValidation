@@ -12,8 +12,11 @@ class SpatialDeformationLayer(nn.Module):
         self.deformation_grid = nn.Parameter(torch.randn(grid_size, grid_size, grid_size, 3) * 0.1)
 
     def forward(self, x):
-        return F.grid_sample(x.unsqueeze(0), self.deformation_grid.unsqueeze(0)).squeeze(0)
-    
+        original_shape = x.shape
+        x = F.grid_sample(x.unsqueeze(0), self.deformation_grid.unsqueeze(0))
+        x = x.squeeze(0).reshape(original_shape)
+        return x
+        
 class BayesianLaplace:
     def __init__(self, model, prior_mean, prior_std, lr):
         """
