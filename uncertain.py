@@ -105,8 +105,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             with torch.no_grad():
                 output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
 
-            # extract density values
-            d = output['sigmas']           
+            # extract aggregated density values
+            d = output['aggregated_density']           
 
             # initialize BayesianLaplace object
             prior_mean = 0.0
