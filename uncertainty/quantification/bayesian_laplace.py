@@ -57,28 +57,34 @@ class BayesianLaplace:
         X = torch.tensor(X).cuda()
         y = torch.tensor(y).cuda()
 
-        optimizer = torch.optim.Adam([theta_init], lr=self.lr)
+        # perturbations
+        num_perturbations = 10
+        perturbation_scale = 0.1
+        perturbations = torch.randn((num_perturbations, len(theta_init)), device='cuda') * perturbation_scale
+        theta_init_perturbed = theta_init.unsqueeze(0) + perturbations
 
         minLoss, minTheta = float('inf'), theta_init
-        for _ in range(1000):
-            optimizer.zero_grad()
-            loss = self.negative_log_posterior(theta_init, X, y)
-            loss.backward()
-            optimizer.step()
-            if loss < minLoss:
-                minLoss = loss
-                minTheta = theta_init
+        for theta in theta_init_perturbed:
+            optimizer = torch.optim.Adam([theta], lr=self.lr)
+            for _ in range(1000):
+                optimizer.zero_grad()
+                loss = self.negative_log_posterior(theta, X, y)
+                loss.backward()
+                optimizer.step()
+                if loss < minLoss:
+                    minLoss = loss
+                    minTheta = theta
 
-        theta_init = minTheta
-        self.set_sigma_net_params(theta_init.detach().cpu().numpy())
-        self.posterior_mean = theta_init.detach().cpu().numpy()
+        self.set_sigma_net_params(minTheta.detach().cpu().numpy())
+        self.posterior_mean = minTheta.detach().cpu().numpy()
         self.X = torch.tensor(X)
         self.y = torch.tensor(y)
-        hessian = self.hessian_approximator.compute(theta_init)
+        hessian = self.hessian_approximator.compute(minTheta)
         reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-2  # Tikhonov regularization
         hessian += reg_term
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
         return self
+
     
     def negative_log_posterior_hessian_wrapper(self, xt):
         return self.negative_log_posterior(xt, self.X, self.y)
