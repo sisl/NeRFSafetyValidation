@@ -167,7 +167,7 @@ class NerfSimulator(gym.Env):
         penalty_strength = 36.0 # slightly above likely disturbance 
 
         # reward is directly proportional to the likelihood and decreases with increasing uncertainty
-        reward = likelihood - penalty_strength * sigma_d_opt
+        reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -100, 100)
 
         return reward
 
