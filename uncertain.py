@@ -140,6 +140,9 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov)))
             print("STD DEV OF UNCERTAINTY")
             print(std_dev_uncertainty)
+            frobenius_norm = np.linalg.norm(pos_cov, ord='fro')
+            print("FROBENIUS NORM")
+            print(frobenius_norm)
 
             # check for absolute certain/uncertain values
             # if pos_cov <= 0:
