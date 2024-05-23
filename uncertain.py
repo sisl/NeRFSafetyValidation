@@ -101,6 +101,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             rays_o = rays["rays_o"].reshape((H, W, -1))
             rays_d = rays["rays_d"].reshape((H, W, -1))
             X = torch.cat([rays_o, rays_d], dim=-1)  # X is now a [N, 5] tensor representing the 5D coordinates
+            X = X.reshape(-1, X.shape[-1])
 
             with torch.no_grad():
                 output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
