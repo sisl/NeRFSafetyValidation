@@ -580,7 +580,7 @@ class NeRFRenderer(nn.Module):
             results['image'] = image
             results['rgbs'] = results_['rgbs']
             results['sigmas'] = results_['sigmas']
-            results['aggregated_density'] = results['aggregated_density']
+            results['aggregated_density'] = aggregated_density
 
         else:
             results = _run(rays_o, rays_d, **kwargs)
