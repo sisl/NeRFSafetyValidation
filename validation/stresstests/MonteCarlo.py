@@ -44,7 +44,8 @@ class MonteCarlo(object):
 
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
-                # pdb.set_trace()
+                adjusted_noise_mean = self.noise_mean + reward
+                noise = torch.normal(adjusted_noise_mean, self.noise_std, generator=self.noise_seed)
                 noise = torch.normal(self.noise_mean, self.noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
                 if isinstance(self.simulator, NerfSimulator):
