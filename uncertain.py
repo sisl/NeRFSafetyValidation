@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 import random
 from matplotlib import pyplot as plt
@@ -111,7 +112,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             # initialize BayesianLaplace object
             prior_mean = 0.0
             prior_std = 1.0
-            bayesian_laplace = BayesianLaplace(model, prior_mean, prior_std, opt.lr)
+            model_copy = deepcopy(model)
+            bayesian_laplace = BayesianLaplace(model_copy, prior_mean, prior_std, opt.lr)
 
             # fit the model
             bayesian_laplace.fit(X, d)
