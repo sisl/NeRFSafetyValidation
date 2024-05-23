@@ -119,25 +119,26 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             # get optimized parameters
             pos_mu = bayesian_laplace.get_posterior_mean()
             pos_cov = bayesian_laplace.get_posterior_cov()
+            n = pos_cov.shape[0]
 
             mean_of_means = np.mean(pos_mu)
             std_dev_of_means = np.std(pos_mu)
 
             # Trace of the covariance matrix
-            trace = np.trace(pos_cov)
+            trace = np.trace(pos_cov) / n
 
             # Maximum eigenvalue of the covariance matrix
-            max_eigenvalue = np.max(np.linalg.eigvals(pos_cov))
+            max_eigenvalue = np.max(np.linalg.eigvals(pos_cov)) / n
 
             print("MoM AND STD DEV")
             print(mean_of_means, std_dev_of_means)
 
             print("TRACE AND MAX EIGENVAL")
             print(trace, max_eigenvalue)
-            std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov)))
+            std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
             print("STD DEV OF UNCERTAINTY")
             print(std_dev_uncertainty)
-            frobenius_norm = np.linalg.norm(pos_cov, ord='fro')
+            frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
             print("FROBENIUS NORM")
             print(frobenius_norm)
 
