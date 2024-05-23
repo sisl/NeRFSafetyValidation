@@ -9,12 +9,13 @@ class SpatialDeformationLayer(nn.Module):
     def __init__(self, grid_size):
         super().__init__()
         self.grid_size = grid_size
-        self.deformation_grid = nn.Parameter(torch.randn(grid_size, grid_size, grid_size, 3) * 0.1)
+        self.deformation_grid = nn.Parameter(torch.randn(1, grid_size, grid_size, grid_size, 3) * 0.1)
 
     def forward(self, x):
         original_shape = x.shape
-        x = F.grid_sample(x.unsqueeze(0), self.deformation_grid.unsqueeze(0))
-        x = x.squeeze(0).reshape(original_shape)
+        x = x.view(1, -1, 3)
+        x = F.grid_sample(x, self.deformation_grid, align_corners=True)
+        x = x.view(original_shape)
         return x
         
 class BayesianLaplace:
