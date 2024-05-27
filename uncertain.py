@@ -86,8 +86,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
 
     elif method == "Bayesian Laplace Approximation":
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
-        results = {"pos_mu": [], "pos_cov": []}
-        varNames = ["pos_mu", "pos_cov"]
+        results = {"trace": [], "sdu": []}
+        varNames = ["trace", "sdu"]
         path_to_images = os.path.join(opt.path, "train")
         for i, image_name in enumerate(os.listdir(path_to_images)):
             # OFFLINE METHOD
@@ -123,26 +123,15 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             pos_cov = bayesian_laplace.get_posterior_cov()
             n = pos_cov.shape[0]
 
-            mean_of_means = np.mean(pos_mu)
-            std_dev_of_means = np.std(pos_mu)
-
             # Trace of the covariance matrix
             trace = np.trace(pos_cov) / n
-
-            # Maximum eigenvalue of the covariance matrix
-            max_eigenvalue = np.max(np.linalg.eigvals(pos_cov)) / n
-
-            print("MoM AND STD DEV")
-            print(mean_of_means, std_dev_of_means)
-
-            print("TRACE AND MAX EIGENVAL")
-            print(trace, max_eigenvalue)
+            
+            # Standard deviation of diag elements of covariance matrix
             std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
-            print("STD DEV OF UNCERTAINTY")
-            print(std_dev_uncertainty)
-            frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
-            print("FROBENIUS NORM")
-            print(frobenius_norm)
+
+            # frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
+            # print("FROBENIUS NORM")
+            # print(frobenius_norm)
 
             # check for absolute certain/uncertain values
             # if pos_cov <= 0:
@@ -150,11 +139,18 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             # elif pos_cov >= 3:
             #     au += 1
             # else:
-            results["pos_mu"].append(pos_mu)
-            results["pos_cov"].append(pos_cov)
+            # results["pos_mu"].append(pos_mu)
+            # results["pos_cov"].append(pos_cov)
+            results["trace"].append(trace)
+            results["sdu"].append(std_dev_uncertainty)
 
-            print(f"Image #{i} ({image_name}): pos_mu = {pos_mu}, pos_cov = {pos_cov}")
-        create_heatmap(results["pos_mu"], results["pos_cov"])
+            print("POS MU")
+            print(pos_mu)
+            print("POS COV")
+            print(pos_cov)
+
+            print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
+        create_heatmap(results["trace"], results["sdu"])
     else:
         print(f"Unrecognized uncertainty quantification method {method}")
         exit()
