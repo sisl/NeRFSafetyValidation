@@ -63,7 +63,7 @@ class BayesianLaplace:
 
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
-        theta_init = torch.tensor(theta_init, requires_grad=True).cuda()
+        theta_init = torch.randn_like(theta_init, requires_grad=True).cuda()
         X = torch.tensor(X).cuda()
         y = torch.tensor(y).cuda()
 
@@ -77,15 +77,19 @@ class BayesianLaplace:
         for X_p in X_perturbed:
             theta = theta_init.clone().detach().requires_grad_(True)  # Create a copy of theta_init for each X_p
             optimizer = torch.optim.Adam([theta], lr=self.lr)
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
             for _ in range(1000):
                 optimizer.zero_grad()
                 loss = self.negative_log_posterior(theta, X_p, y)
                 loss.backward()
                 optimizer.step()
+                scheduler.step()
                 if loss < minLoss:
                     minLoss = loss
                     minTheta = theta
 
+        print("CHECK:")
+        print(minLoss, minTheta)
         self.set_sigma_net_params(minTheta.detach().cpu().numpy())
         self.posterior_mean = minTheta.detach().cpu().numpy()
         self.X = torch.tensor(X)
