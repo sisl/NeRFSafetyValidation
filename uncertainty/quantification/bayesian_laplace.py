@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from scipy.optimize import basinhopping
 
 from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
@@ -77,17 +78,17 @@ class BayesianLaplace:
         minLoss, minTheta = float('inf'), theta_init
         for X_p in X_perturbed:
             theta = theta_init.clone().detach().requires_grad_(True)  # Create a copy of theta_init for each X_p
-            optimizer = torch.optim.Adam([theta], lr=self.lr)
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
-            for _ in range(1000):
-                optimizer.zero_grad()
+
+            def objective(theta):
                 loss = self.negative_log_posterior(theta, X_p, y)
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
-                if loss < minLoss:
-                    minLoss = loss
-                    minTheta = theta
+                return loss.item()
+
+            minimizer_kwargs = {"method": "BFGS"}
+            ret = basinhopping(objective, theta.cpu().numpy(), minimizer_kwargs=minimizer_kwargs, niter=100)
+
+            if ret.fun < minLoss:
+                minLoss = ret.fun
+                minTheta = torch.tensor(ret.x, requires_grad=True).cuda()
 
         print("CHECK:")
         print(minLoss, minTheta)
