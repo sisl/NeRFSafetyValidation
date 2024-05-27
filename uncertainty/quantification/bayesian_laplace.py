@@ -84,7 +84,7 @@ class BayesianLaplace:
                 return loss.item()
 
             minimizer_kwargs = {"method": "BFGS"}
-            ret = basinhopping(objective, theta.cpu().numpy(), minimizer_kwargs=minimizer_kwargs, niter=100)
+            ret = basinhopping(objective, theta.detach().cpu().numpy(), minimizer_kwargs=minimizer_kwargs, niter=100)
 
             if ret.fun < minLoss:
                 minLoss = ret.fun
