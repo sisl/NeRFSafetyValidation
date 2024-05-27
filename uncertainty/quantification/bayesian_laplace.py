@@ -63,7 +63,8 @@ class BayesianLaplace:
 
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
-        theta_init = torch.tensor(theta_init, requires_grad=True).cuda()
+        theta_init = torch.tensor(theta_init, requires_grad=True)
+        theta_init = torch.randn_like(theta_init, requires_grad=True).cuda()
         X = torch.tensor(X).cuda()
         y = torch.tensor(y).cuda()
 
