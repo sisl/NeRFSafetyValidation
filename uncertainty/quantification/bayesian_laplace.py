@@ -83,8 +83,6 @@ class BayesianLaplace:
             del X_p, theta, optimizer, scheduler, loss
             torch.cuda.empty_cache()
 
-        print("CHECK LOSS & THETA:")
-        print(minLoss, minTheta)
         self.set_sigma_net_params(minTheta.detach().cpu().numpy())
         self.posterior_mean = minTheta.detach().cpu().numpy()
         self.X = torch.tensor(X)
