@@ -156,10 +156,9 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 results["trace"].append(trace)
                 results["sdu"].append(std_dev_uncertainty)
 
-                print("POS MU")
-                print(pos_mu)
-                print("POS COV")
-                print(pos_cov)
+                # delete tensors and free up GPU memory
+                del bayesian_laplace, pos_mu, pos_cov
+                torch.cuda.empty_cache()
 
                 print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
         else:
@@ -167,11 +166,9 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             # extract aggregated density values
             d = rendered_output[0]['aggregated_density']       
 
-
             rays_o = rendered_output[1].reshape((H, W, -1))
             rays_d = rendered_output[2].reshape((H, W, -1))
             X = rays_o.unsqueeze(-2) + rays_d.unsqueeze(-2)
-
 
             # initialize BayesianLaplace object
             prior_mean = 0.0
@@ -193,6 +190,11 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
 
             print(f"trace = {trace}, sdu = {std_dev_uncertainty}")
+
+            # delete tensors and free up GPU memory
+            del bayesian_laplace, pos_mu, pos_cov
+            torch.cuda.empty_cache()
+            
             return trace, std_dev_uncertainty
         create_heatmap(results["trace"], results["sdu"])
     else:
