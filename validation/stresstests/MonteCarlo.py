@@ -52,7 +52,7 @@ class MonteCarlo(object):
                 noise = torch.normal(self.noise_mean, adjusted_noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
                 if isinstance(self.simulator, NerfSimulator):
-                    isCollision, collisionVal, currentPos, sigma_d_opt = self.simulator.step(noise)
+                    isCollision, collisionVal, currentPos, sigma_d_opt, trace = self.simulator.step(noise)
                 else:
                     isCollision, collisionVal, currentPos = self.simulator.step(noise)
                 outputStepList = [simulationNumber, stepNumber]
@@ -77,7 +77,7 @@ class MonteCarlo(object):
                     # calculate and handle reward/sigma
                     outputStepList.append(reward)
                     outputStepList.append(sigma_d_opt)
-                    reward = self.simulator.reward(curLogLikelihood, sigma_d_opt)
+                    reward = self.simulator.reward(curLogLikelihood, sigma_d_opt, trace)
                 
                 # output the collision value
                 outputStepList.append(isCollision)

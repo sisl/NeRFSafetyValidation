@@ -107,7 +107,7 @@ class NerfSimulator(gym.Env):
             # convert to torch object
 
             # calculate uncertainty
-            _, sigma = uncertainty(self.uq_method, rendered_output=self.filter.render_for_uncertainty(true_pose), model_to_use=self.model, lr=self.filter.lrate)
+            trace, sigma = uncertainty(self.uq_method, rendered_output=self.filter.render_for_uncertainty(true_pose), model_to_use=self.model, lr=self.filter.lrate)
             
             print("saving image files")
             gt_img_tuple = gt_img.cpu().detach().numpy()
@@ -145,18 +145,18 @@ class NerfSimulator(gym.Env):
 
                 if collided:
                     print(f"Drone collided in state {current_state}")
-                    return collided, collisionVal, current_state[:3], sigma
+                    return collided, collisionVal, current_state[:3], sigma, trace
                 else:
                     print(f"Drone did NOT collide in state {current_state}")
 
             self.iter += 1
 
             # return if it collided, the value at the collision (sdf), and the position during collision
-            return collided, collisionVal, current_state[:3], sigma
+            return collided, collisionVal, current_state[:3], sigma, trace
         except KeyboardInterrupt:
             return
         
-    def reward(self, likelihood, sigma_d_opt):
+    def reward(self, likelihood, sigma_d_opt, trace=None):
         """
         Compute the reward based on the uncertainty of the image and the likelihood of the trajectory.
 
@@ -167,18 +167,15 @@ class NerfSimulator(gym.Env):
         Returns:
         float: The computed reward.
         """
+        penalty_strength = 36.0 # slightly above likely disturbance 
 
         if self.uq_method == "Gaussian Approximation":
-            penalty_strength = 36.0 # slightly above likely disturbance 
-
             # reward is directly proportional to the likelihood and decreases with increasing uncertainty
             reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -penalty_strength * 2, penalty_strength)
 
         elif self.uq_method == "Bayesian Laplace Approximation":
-            penalty_strength = 36.0 # slightly above likely disturbance 
-
-            # reward is directly proportional to the likelihood and decreases with increasing uncertainty
-            reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -penalty_strength * 2, penalty_strength)
+            # reward is directly proportional to the likelihood and decreases with increasing uncertainty (product of sdu & trace)
+            reward = np.clip((likelihood - penalty_strength * sigma_d_opt * trace), -penalty_strength * 2, penalty_strength)
 
         return reward
 
