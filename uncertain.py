@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 H = W = 800
 
 ####################### MAIN LOOP ##########################################
-def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=None):
+def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=None, lr=None):
     """
     Compute the uncertainty using the specified method.
 
@@ -173,7 +173,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             # initialize BayesianLaplace object
             prior_mean = 0.0
             prior_std = 1.0
-            bayesian_laplace = BayesianLaplace(model_to_use, prior_mean, prior_std, opt.lr)
+            bayesian_laplace = BayesianLaplace(model_to_use, prior_mean, prior_std, lr)
 
             # fit the model
             bayesian_laplace.fit(X, d)
@@ -194,7 +194,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             # delete tensors and free up GPU memory
             del bayesian_laplace, pos_mu, pos_cov
             torch.cuda.empty_cache()
-            
+
             return trace, std_dev_uncertainty
         create_heatmap(results["trace"], results["sdu"])
     else:
