@@ -122,7 +122,10 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 pos_mu = bayesian_laplace.get_posterior_mean()
                 pos_cov = bayesian_laplace.get_posterior_cov()
                 n = pos_cov.shape[0]
+
+                # free up memory
                 del model_copy
+                torch.cuda.empty_cache()
 
                 # Trace of the covariance matrix
                 trace = np.trace(pos_cov) / n
