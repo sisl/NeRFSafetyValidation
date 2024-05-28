@@ -163,7 +163,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
         else:
             # ONLINE METHOD
-            model_theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
+            model_theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in model_to_use.sigma_net.parameters()])
 
             # extract aggregated density values
             d = rendered_output[0]['aggregated_density']       
