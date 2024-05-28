@@ -51,16 +51,6 @@ class BayesianLaplace:
     def negative_log_posterior(self, theta, X, y):
         return -self.log_posterior(theta, X, y)
 
-    def grad_negative_log_posterior(self, theta, X, y):
-        epsilon = 1e-5
-        grad = np.zeros_like(theta)
-        for i in range(len(theta)):
-            theta_epsilon = theta.copy()
-            theta_epsilon[i] += epsilon
-            grad[i] = (self.negative_log_posterior(theta_epsilon, X, y) - self.negative_log_posterior(theta, X, y)) / epsilon
-            #print(theta_epsilon, grad[i])
-        return grad
-
     def fit(self, X, y):
         theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in self.model.sigma_net.parameters()])
         theta_init = torch.tensor(theta_init, requires_grad=True).cuda()
