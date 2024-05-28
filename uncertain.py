@@ -163,6 +163,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
         else:
             # ONLINE METHOD
+            model_theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
+
             # extract aggregated density values
             d = rendered_output[0]['aggregated_density']       
 
@@ -190,6 +192,17 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
 
             print(f"trace = {trace}, sdu = {std_dev_uncertainty}")
+
+            # reset params
+            start = 0
+            for param in model_to_use.sigma_net.parameters():
+                end = start + param.numel()
+                if isinstance(model_theta_init, np.ndarray):
+                    new_vals = torch.from_numpy(model_theta_init[start:end]).view(param.shape)
+                else:  # Assuming it's already a PyTorch tensor
+                    new_vals = model_theta_init[start:end].view(param.shape)
+                param.data.copy_(new_vals)
+                start = end
 
             # delete tensors and free up GPU memory
             del bayesian_laplace, pos_mu, pos_cov

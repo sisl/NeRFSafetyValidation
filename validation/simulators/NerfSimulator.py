@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 import pathlib
 import shutil
@@ -33,7 +34,7 @@ class NerfSimulator(gym.Env):
         self.get_rays_fn = get_rays_fn
         self.render_fn = render_fn
         self.uq_method = uq_method
-        self.model = model
+        self.model = deepcopy(model)
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
