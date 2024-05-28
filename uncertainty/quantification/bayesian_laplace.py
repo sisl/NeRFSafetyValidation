@@ -67,7 +67,7 @@ class BayesianLaplace:
         minLoss, minTheta = float('inf'), theta_init
         for X_p in X_perturbed:
             theta = theta_init.clone().detach().requires_grad_(True)  # Create a copy of theta_init for each X_p
-            optimizer = torch.optim.SGD([theta], lr=self.lr)
+            optimizer = torch.optim.Adam([theta], lr=self.lr)
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
             for _ in range(1000):
                 optimizer.zero_grad()
