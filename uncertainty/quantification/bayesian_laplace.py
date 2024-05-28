@@ -88,10 +88,6 @@ class BayesianLaplace:
                     minLoss = loss
                     minTheta = theta
 
-            # delete tensors and free up GPU memory
-            del theta, X_p, loss
-            torch.cuda.empty_cache()
-
         print("CHECK LOSS & THETA:")
         print(minLoss, minTheta)
         self.set_sigma_net_params(minTheta.detach().cpu().numpy())
@@ -102,6 +98,10 @@ class BayesianLaplace:
         reg_term = torch.eye(hessian.shape[0]).cuda() * 1e-2  # Tikhonov regularization
         hessian += reg_term
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
+                    
+        # delete tensors and free up GPU memory
+        del theta_init, X, y, loss
+        torch.cuda.empty_cache()
         return self
     
     def negative_log_posterior_hessian_wrapper(self, xt):

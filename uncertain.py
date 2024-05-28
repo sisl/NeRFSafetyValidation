@@ -88,9 +88,23 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
         results = {"trace": [], "sdu": []}
         varNames = ["trace", "sdu"]
+        model_copy = deepcopy(model)
+        theta_copy = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
         if path_to_images is not None:
             for i, image_name in enumerate(os.listdir(path_to_images)):
                 # OFFLINE METHOD
+
+                # reset params
+                # set params of sigma_net
+                start = 0
+                for param in model_copy.sigma_net.parameters():
+                    end = start + param.numel()
+                    if isinstance(theta_copy, np.ndarray):
+                        new_vals = torch.from_numpy(theta_copy[start:end]).view(param.shape)
+                    else:  # Assuming it's already a PyTorch tensor
+                        new_vals = theta_copy[start:end].view(param.shape)
+                    param.data.copy_(new_vals)
+                    start = end
 
                 # load corresponding camera parameters
                 image_name = f'./train/{image_name}'
@@ -112,7 +126,6 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 # initialize BayesianLaplace object
                 prior_mean = 0.0
                 prior_std = 1.0
-                model_copy = deepcopy(model)
                 bayesian_laplace = BayesianLaplace(model_copy, prior_mean, prior_std, opt.lr)
 
                 # fit the model
