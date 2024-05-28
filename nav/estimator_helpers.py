@@ -256,7 +256,7 @@ class Estimator():
         with torch.no_grad():
             output = self.render_fn(rays["rays_o"], rays["rays_d"])
 
-        return output
+        return output, rays["rays_o"], rays["rays_d"]
 
     def estimate_state(self, sensor_img, obs_img_pose, action):
         # Computes Jacobian w.r.t dynamics are time t-1. Then update state covariance Sig_{t|t-1}.

@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class NerfSimulator(gym.Env):
     """Class template for safety validation."""
 
-    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed):
+    def __init__(self, start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, uq_method, model, seed):
         super(NerfSimulator, self).__init__()
 
         self.action_space = Box(low=-np.inf, high=np.inf, shape=(12,), dtype=np.float32)  # 12-dimensional disturbance vector
@@ -32,6 +32,8 @@ class NerfSimulator(gym.Env):
         self.blender_cfg = blender_cfg
         self.get_rays_fn = get_rays_fn
         self.render_fn = render_fn
+        self.uq_method = uq_method
+        self.model = model
 
         # Change start state from 18-vector (with rotation as a rotation matrix) to 12 vector (with rotation as a rotation vector)
         agent_cfg['x0'] = torch.cat([start_state[:6], rot_matrix_to_vec(start_state[6:15].reshape((3, 3))), start_state[15:]], dim=-1).cuda()
@@ -104,7 +106,7 @@ class NerfSimulator(gym.Env):
             # convert to torch object
 
             # calculate uncertainty
-            _, sigma = uncertainty("Gaussian Approximation", rendered_output=self.filter.render_for_uncertainty(true_pose))
+            _, sigma = uncertainty(self.uq_method, rendered_output=self.filter.render_for_uncertainty(true_pose), model_to_use=self.model)
             
             print("saving image files")
             gt_img_tuple = gt_img.cpu().detach().numpy()
@@ -164,10 +166,18 @@ class NerfSimulator(gym.Env):
         Returns:
         float: The computed reward.
         """
-        penalty_strength = 36.0 # slightly above likely disturbance 
 
-        # reward is directly proportional to the likelihood and decreases with increasing uncertainty
-        reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -penalty_strength * 2, penalty_strength)
+        if self.uq_method == "Gaussian Approximation":
+            penalty_strength = 36.0 # slightly above likely disturbance 
+
+            # reward is directly proportional to the likelihood and decreases with increasing uncertainty
+            reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -penalty_strength * 2, penalty_strength)
+
+        elif self.uq_method == "Bayesian Laplace Approximation":
+            penalty_strength = 36.0 # slightly above likely disturbance 
+
+            # reward is directly proportional to the likelihood and decreases with increasing uncertainty
+            reward = np.clip((likelihood - penalty_strength * sigma_d_opt), -penalty_strength * 2, penalty_strength)
 
         return reward
 

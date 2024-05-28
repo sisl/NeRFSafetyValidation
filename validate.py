@@ -277,6 +277,7 @@ if __name__ == "__main__":
     simulator_cfg = envConfig["simulator"]
     n_simulations = envConfig["n_simulations"]
     stress_test = envConfig["stress_test"]
+    uq_method = envConfig["uq_method"]
 
     ### NeRF Configs ###
     # Querying the density (for the planner)
@@ -290,7 +291,7 @@ if __name__ == "__main__":
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
 
     if simulator_cfg == "NerfSimulator":
-        simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, opt.seed)
+        simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, uq_method, model, opt.seed)
     elif simulator_cfg == "BlenderSimulator":
         simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, opt.seed)
     else:
