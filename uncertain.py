@@ -136,7 +136,6 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 n = pos_cov.shape[0]
 
                 # free up memory
-                del model_copy
                 torch.cuda.empty_cache()
 
                 # Trace of the covariance matrix
