@@ -88,14 +88,13 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
         results = {"trace": [], "sdu": []}
         varNames = ["trace", "sdu"]
-        model_copy = deepcopy(model)
-        theta_copy = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
         if path_to_images is not None:
+            model_copy = deepcopy(model)
+            theta_copy = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
             for i, image_name in enumerate(os.listdir(path_to_images)):
                 # OFFLINE METHOD
 
                 # reset params
-                # set params of sigma_net
                 start = 0
                 for param in model_copy.sigma_net.parameters():
                     end = start + param.numel()
