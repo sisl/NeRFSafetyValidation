@@ -87,6 +87,10 @@ class BayesianLaplace:
                 if loss < minLoss:
                     minLoss = loss
                     minTheta = theta
+                    
+            # delete tensors and free up GPU memory
+            del X_p, theta, optimizer, scheduler, loss
+            torch.cuda.empty_cache()
 
         print("CHECK LOSS & THETA:")
         print(minLoss, minTheta)
@@ -100,7 +104,7 @@ class BayesianLaplace:
         self.posterior_cov = np.linalg.inv(hessian.detach().cpu().numpy())
                     
         # delete tensors and free up GPU memory
-        del theta_init, X, y, loss
+        del theta_init, X, y, hessian, reg_term
         torch.cuda.empty_cache()
         return self
     
