@@ -222,7 +222,7 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
     print(f'Number of absolute certain values: {ac}')
     print(f'Number of absolute uncertain values: {au}')
     for varName in varNames:
-        plt.hist(results[varName], bins=50)
+        plt.hist(results[varName], bins=10)
         plt.xlabel(f'Uncertainty ({varName})')
         plt.ylabel('Frequency')
         plt.savefig(f'results/uncertainty_{method}_{varName}.png')
