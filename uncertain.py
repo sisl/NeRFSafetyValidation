@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 H = W = 800
 
 ####################### MAIN LOOP ##########################################
-def uncertainty(method, path_to_images=None, rendered_output=None):
+def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=None):
     """
     Compute the uncertainty using the specified method.
 
@@ -70,11 +70,11 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
         else:
             # ONLINE METHOD
             # extract color/density values
-            c = rendered_output['rgbs']
-            d = rendered_output['sigmas']
+            c = rendered_output[0]['rgbs']
+            d = rendered_output[0]['sigmas']
 
             # extract rendered color
-            r = rendered_output['image']            
+            r = rendered_output[0]['image']            
 
             # optimize parameters
             gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
@@ -88,32 +88,84 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
         results = {"trace": [], "sdu": []}
         varNames = ["trace", "sdu"]
-        path_to_images = os.path.join(opt.path, "train")
-        for i, image_name in enumerate(os.listdir(path_to_images)):
-            # OFFLINE METHOD
+        if path_to_images is not None:
+            for i, image_name in enumerate(os.listdir(path_to_images)):
+                # OFFLINE METHOD
 
-            # load corresponding camera parameters
-            image_name = f'./train/{image_name}'
-            cam_param = load_camera_params(image_name, opt.path)
-            cam_param = torch.tensor([cam_param])
+                # load corresponding camera parameters
+                image_name = f'./train/{image_name}'
+                cam_param = load_camera_params(image_name, opt.path)
+                cam_param = torch.tensor([cam_param])
 
-            # render the image using NeRF
-            rays = get_rays_fn(cam_param)
-            rays_o = rays["rays_o"].reshape((H, W, -1))
-            rays_d = rays["rays_d"].reshape((H, W, -1))
+                # render the image using NeRF
+                rays = get_rays_fn(cam_param)
+                rays_o = rays["rays_o"].reshape((H, W, -1))
+                rays_d = rays["rays_d"].reshape((H, W, -1))
+                X = rays_o.unsqueeze(-2) + rays_d.unsqueeze(-2)
+
+                with torch.no_grad():
+                    output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+                # extract aggregated density values
+                d = output['aggregated_density']           
+
+                # initialize BayesianLaplace object
+                prior_mean = 0.0
+                prior_std = 1.0
+                model_copy = deepcopy(model)
+                bayesian_laplace = BayesianLaplace(model_copy, prior_mean, prior_std, opt.lr)
+
+                # fit the model
+                bayesian_laplace.fit(X, d)
+
+                # get optimized parameters
+                pos_mu = bayesian_laplace.get_posterior_mean()
+                pos_cov = bayesian_laplace.get_posterior_cov()
+                n = pos_cov.shape[0]
+                del model_copy
+
+                # Trace of the covariance matrix
+                trace = np.trace(pos_cov) / n
+                
+                # Standard deviation of diag elements of covariance matrix
+                std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
+
+                # frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
+                # print("FROBENIUS NORM")
+                # print(frobenius_norm)
+
+                # check for absolute certain/uncertain values
+                # if pos_cov <= 0:
+                #     ac += 1
+                # elif pos_cov >= 3:
+                #     au += 1
+                # else:
+                # results["pos_mu"].append(pos_mu)
+                # results["pos_cov"].append(pos_cov)
+                results["trace"].append(trace)
+                results["sdu"].append(std_dev_uncertainty)
+
+                print("POS MU")
+                print(pos_mu)
+                print("POS COV")
+                print(pos_cov)
+
+                print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
+        else:
+            # ONLINE METHOD
+            # extract aggregated density values
+            d = rendered_output[0]['aggregated_density']       
+
+
+            rays_o = rendered_output[1].reshape((H, W, -1))
+            rays_d = rendered_output[2].reshape((H, W, -1))
             X = rays_o.unsqueeze(-2) + rays_d.unsqueeze(-2)
 
-            with torch.no_grad():
-                output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
-
-            # extract aggregated density values
-            d = output['aggregated_density']           
 
             # initialize BayesianLaplace object
             prior_mean = 0.0
             prior_std = 1.0
-            model_copy = deepcopy(model)
-            bayesian_laplace = BayesianLaplace(model_copy, prior_mean, prior_std, opt.lr)
+            bayesian_laplace = BayesianLaplace(model_to_use, prior_mean, prior_std, opt.lr)
 
             # fit the model
             bayesian_laplace.fit(X, d)
@@ -129,27 +181,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None):
             # Standard deviation of diag elements of covariance matrix
             std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
 
-            # frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
-            # print("FROBENIUS NORM")
-            # print(frobenius_norm)
-
-            # check for absolute certain/uncertain values
-            # if pos_cov <= 0:
-            #     ac += 1
-            # elif pos_cov >= 3:
-            #     au += 1
-            # else:
-            # results["pos_mu"].append(pos_mu)
-            # results["pos_cov"].append(pos_cov)
-            results["trace"].append(trace)
-            results["sdu"].append(std_dev_uncertainty)
-
-            print("POS MU")
-            print(pos_mu)
-            print("POS COV")
-            print(pos_cov)
-
-            print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
+            print(f"trace = {trace}, sdu = {std_dev_uncertainty}")
+            return trace, std_dev_uncertainty
         create_heatmap(results["trace"], results["sdu"])
     else:
         print(f"Unrecognized uncertainty quantification method {method}")
