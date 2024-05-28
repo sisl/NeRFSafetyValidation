@@ -168,6 +168,7 @@ class NerfSimulator(gym.Env):
         float: The computed reward.
         """
         penalty_strength = 36.0 # slightly above likely disturbance 
+        num_perturbations = 3 # match number from bayesian_laplace
 
         if self.uq_method == "Gaussian Approximation":
             # reward is directly proportional to the likelihood and decreases with increasing uncertainty
@@ -175,7 +176,7 @@ class NerfSimulator(gym.Env):
 
         elif self.uq_method == "Bayesian Laplace Approximation":
             # reward is directly proportional to the likelihood and decreases with increasing uncertainty (product of sdu & trace)
-            reward = np.clip((likelihood - penalty_strength * sigma_d_opt * trace), -penalty_strength * 2, penalty_strength)
+            reward = np.clip((likelihood - penalty_strength * sigma_d_opt * trace * num_perturbations), -penalty_strength * 2, penalty_strength)
 
         return reward
 
