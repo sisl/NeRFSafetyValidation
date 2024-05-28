@@ -76,18 +76,20 @@ class BayesianLaplace:
         minLoss, minTheta = float('inf'), theta_init
         for X_p in X_perturbed:
             theta = theta_init.clone().detach().requires_grad_(True)  # Create a copy of theta_init for each X_p
-            optimizer = torch.optim.Adam([theta], lr=self.lr)
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
+            optimizer = torch.optim.LBFGS([theta], lr=self.lr)
             for _ in range(1000):
-                optimizer.zero_grad()
-                loss = self.negative_log_posterior(theta, X_p, y)
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
-                if loss < minLoss:
-                    minLoss = loss
-                    minTheta = theta
-                    
+                def closure():
+                    optimizer.zero_grad()
+                    loss = self.negative_log_posterior(theta, X_p, y)
+                    loss.backward()
+                    return loss
+                optimizer.step(closure)
+                with torch.no_grad():
+                    loss = self.negative_log_posterior(theta, X_p, y)
+                    if loss < minLoss:
+                        minLoss = loss
+                        minTheta = theta
+
             # delete tensors and free up GPU memory
             del X_p, theta, optimizer, scheduler, loss
             torch.cuda.empty_cache()
