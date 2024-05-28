@@ -91,7 +91,7 @@ class BayesianLaplace:
                         minTheta = theta
 
             # delete tensors and free up GPU memory
-            del X_p, theta, optimizer, scheduler, loss
+            del X_p, theta, optimizer, loss
             torch.cuda.empty_cache()
 
         print("CHECK LOSS & THETA:")
