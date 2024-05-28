@@ -59,7 +59,7 @@ class BayesianLaplace:
 
         # spatial perturbations in input 
         num_perturbations = 3
-        perturbation_scale = 0.1
+        perturbation_scale = 0.3
         perturbations = torch.randn((num_perturbations,) + X.shape, device='cuda') * perturbation_scale
         X_perturbed = X.unsqueeze(0) + perturbations
 
