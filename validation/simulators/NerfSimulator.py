@@ -207,7 +207,7 @@ class NerfSimulator(gym.Env):
         # From the A* initialization, perform gradient descent on the flat states of agent to get a trajectory
         # that minimizes collision and control effort.
         if not cache_flag:
-            traj.learn_init(0)
+            traj.learn_init()
             init_poses = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_poses"
             init_costs = "paths" / pathlib.Path(self.planner_cfg['exp_name']) / "init_costs"
             target = "cached" / pathlib.Path(self.planner_cfg['exp_name'])
