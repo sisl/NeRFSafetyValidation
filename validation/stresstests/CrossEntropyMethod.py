@@ -118,7 +118,7 @@ class CrossEntropyMethod:
                         risk = collisionVal
                         scaling_factor = 0.01 * risk
                         scaled_reward = reward * scaling_factor
-                        adjusted_risk = risk + scaled_reward
+                        adjusted_risk = risk - scaled_reward
                         collisionVal = adjusted_risk
 
                     # append the sdf value and positions
