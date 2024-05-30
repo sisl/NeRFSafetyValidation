@@ -36,7 +36,7 @@ def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):
 
         q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
         p = SeedableMultivariateNormal(noise_meanP, noise_covP, noise_seed=noise_seed)
-        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 10, noise_seed, blend_file, opt.workspace, opt.iter, opt.k)
+        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 5, noise_seed, blend_file, opt.workspace, opt.iter, opt.k)
         means, covs, dists, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
         print(f"Means: {means}")
         print(f"Covariance Matrices: {covs}")
