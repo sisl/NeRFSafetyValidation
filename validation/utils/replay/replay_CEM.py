@@ -77,7 +77,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
         for simulationNumber in range(start_iter, len(simulationData[population].items())):
             simulationSteps = simulationData[population][simulationNumber]
             simulator.reset()
-            outputSimulationList = []
+            outputSimulationList = [population]
             simTrajLogLikelihood = 0
             everCollided = False
             print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps in population {population}!")
