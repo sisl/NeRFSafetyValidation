@@ -170,6 +170,24 @@ class CrossEntropyMethod:
                     print(f"Percentage of collisions: {self.collisions / (simulationNumber + 1) * 100}%")
                     print(f"Average number of steps to collision: {self.stepsToCollision / (self.collisions)}")
 
+                    '''
+                    Simulation data indexing for CrossEntropyMethod:
+                    0: Population #
+                    1: Simulation #
+                    2: Step #
+                    3-14: Noise data (12D)
+                    15: Reward applied to this step (if applicable)
+                    16: Sigma value (uncertainty) for this step (if applicable)
+                    17: SDF value at position
+                    18-20: XYZ Coordinates
+                    21: Step trajectory likelihood under p
+                    22: Step trajectory likelihood under q
+                    23: Cumulative trajectory likelihood under p
+                    24: Cumulative trajectory likelihood under q
+                    25: Did we collide on this step
+                    26: Did we collide on this simulation (added post facto)
+                    '''
+
                 if not self.TOY_PROBLEM:
                     # write results to CSV
                     with open(f"./results/collisionValuesCEM_m{self.m}melite{self.m_elite}k{self.kmax}.csv", "a") as csvFile:
