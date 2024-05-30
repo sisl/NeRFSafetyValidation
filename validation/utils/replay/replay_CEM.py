@@ -77,7 +77,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
         for simulationNumber in range(start_iter, len(simulationData[population].items())):
             simulationSteps = simulationData[population][simulationNumber]
             simulator.reset()
-            outputSimulationList = [population]
+            outputSimulationList = []
             simTrajLogLikelihood = 0
             everCollided = False
             print(f"Replaying simulation {simulationNumber} with {len(simulationSteps)} steps in population {population}!")
@@ -107,7 +107,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                 outputStepList.append(isCollision)
                 
                 # append the value of the step to the simulation data
-                outputSimulationList.extend(outputStepList)
+                outputSimulationList.append(outputStepList)
 
                 # count by step
                 nerf_condition = True if simulationResult[population][simulationNumber][step][0].upper() == "TRUE" else False
@@ -139,6 +139,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                 writer = csv.writer(csvFile)
                 for outputStepList in outputSimulationList:
                     outputStepList.append(everCollided)
+                    outputStepList.insert(0, population)
                     writer.writerow(outputStepList) 
 
             counts = [tp_count_step, tn_count_step, fp_count_step, fn_count_step, tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj]
