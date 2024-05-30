@@ -96,7 +96,7 @@ if __name__ == "__main__":
     simulationList = json.loads(simulationList) # convert JSON string into list of lists
     
     # bounding boxes representing drone locations at all timesteps including failure
-    i = 0 if populationNum == "NA" else 1
+    i = 0 if populationNum == "NA" else 3
     for stepList in simulationList:
         location = stepList[15+i:18+i]    
         add_cube(project, location)
