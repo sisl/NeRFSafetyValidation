@@ -103,7 +103,7 @@ class MonteCarlo(object):
             18: step trajectory likelihood
             19: cumulative trajectory likelihood
             20: reward applied to this step
-            21: sigma value (uncertainty) for this step
+            21: Uncertainty for this step
             21: did we collide on this step
             22: did we collide on this simulation (added post facto)
             

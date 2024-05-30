@@ -176,8 +176,8 @@ class CrossEntropyMethod:
                     1: Simulation #
                     2: Step #
                     3-14: Noise data (12D)
-                    15: Reward applied to this step (if applicable)
-                    16: Sigma value (uncertainty) for this step (if applicable)
+                    15: Reward applied to this step
+                    16: Uncertainty for this step
                     17: SDF value at position
                     18-20: XYZ Coordinates
                     21: Step trajectory likelihood under p
