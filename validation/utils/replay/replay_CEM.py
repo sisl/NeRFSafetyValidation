@@ -107,7 +107,7 @@ def replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner
                 outputStepList.append(isCollision)
                 
                 # append the value of the step to the simulation data
-                outputSimulationList.append(outputStepList)
+                outputSimulationList.extend(outputStepList)
 
                 # count by step
                 nerf_condition = True if simulationResult[population][simulationNumber][step][0].upper() == "TRUE" else False
