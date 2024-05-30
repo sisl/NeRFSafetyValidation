@@ -112,7 +112,7 @@ class CrossEntropyMethod:
                         outputStepList.append(reward)
                         outputStepList.append(sigma_d_opt)
                         curLogLikelihood = self.p.distributions[stepNumber].log_prob(noises[stepNumber])
-                        reward = self.simulator.reward(curLogLikelihood, sigma_d_opt, trace)
+                        reward = self.simulator.reward(curLogLikelihood.cpu().numpy(), sigma_d_opt, trace)
 
                         # adjust risk
                         risk = collisionVal
