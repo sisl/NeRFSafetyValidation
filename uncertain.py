@@ -86,8 +86,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
 
     elif method == "Bayesian Laplace Approximation":
         print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
-        results = {"trace": [], "sdu": []}
-        varNames = ["trace", "sdu"]
+        results = {"trace": [], "rmv": []}
+        varNames = ["trace", "rmv"]
         if path_to_images is not None:
             model_copy = deepcopy(model)
             theta_copy = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
@@ -142,8 +142,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 # Trace of the covariance matrix
                 trace = np.trace(pos_cov) / n
                 
-                # Standard deviation of diag elements of covariance matrix
-                std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
+                # root mean variance of diag elements of covariance matrix
+                root_mean_variance = np.sqrt(np.mean(np.diag(pos_cov))) / n
 
                 # frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
                 # print("FROBENIUS NORM")
@@ -158,13 +158,13 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 # results["pos_mu"].append(pos_mu)
                 # results["pos_cov"].append(pos_cov)
                 results["trace"].append(trace)
-                results["sdu"].append(std_dev_uncertainty)
+                results["rmv"].append(root_mean_variance)
 
                 # delete tensors and free up GPU memory
                 del bayesian_laplace, pos_mu, pos_cov
                 torch.cuda.empty_cache()
 
-                print(f"Image #{i} ({image_name}): trace = {trace}, sdu = {std_dev_uncertainty}")
+                print(f"Image #{i} ({image_name}): trace = {trace}, rmv = {root_mean_variance}")
         else:
             # ONLINE METHOD
             model_theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in model_to_use.sigma_net.parameters()])
@@ -197,9 +197,9 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             trace = np.trace(pos_cov) / n
             
             # Standard deviation of diag elements of covariance matrix
-            std_dev_uncertainty = np.sqrt(np.mean(np.diag(pos_cov))) / n
+            root_mean_variance = np.sqrt(np.mean(np.diag(pos_cov))) / n
 
-            print(f"trace = {trace}, sdu = {std_dev_uncertainty}")
+            print(f"trace = {trace}, rmv = {root_mean_variance}")
 
             # reset params
             start = 0
@@ -216,8 +216,8 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
             del bayesian_laplace, pos_mu, pos_cov
             torch.cuda.empty_cache()
 
-            return trace, std_dev_uncertainty
-        create_heatmap(results["trace"], results["sdu"])
+            return trace, root_mean_variance
+        create_heatmap(results["trace"], results["rmv"])
     else:
         print(f"Unrecognized uncertainty quantification method {method}")
         exit()
