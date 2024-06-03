@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
+# technically could use this layer, but takes WAY too long
 class SpatialDeformationLayer(nn.Module):
     def __init__(self, grid_size):
         super().__init__()
