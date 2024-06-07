@@ -6,6 +6,8 @@ The validation of safety-critical systems, particularly within the realm of auto
 
 By leveraging a NeRF as a surrogate model, exploring potential failure modes and vulnerabilities in safety validation becomes comprehensive. The detailed and realistic scene representations provided by NeRFs align with the objectives of creating a controlled and authentic testing environment, allowing for a more nuanced evaluation of the environment under diverse and challenging conditions. This integration not only enhances the reliability of safety validation but also contributes to the development of more robust and adaptive autonomous systems, ultimately fostering greater confidence in the deployment of autonomous vehicles in real-world scenarios.
 
+In addition, this project introduces uncertainty quantification in the context of NeRFs for safety validation. By employing methods such as the Gaussian Approximation and the Bayesian Laplace Approximation, we can better understand and quantify the uncertainty associated with the surrogate model’s predictions. This is then incorporated into the framework via a reward function within the NeRF simulator. The reward function was designed to continuously sample more likely and certain disturbance vectors, leading to more realistic failure modes. This further enhances the robustness of the safety validation process by providing more reliable and trustworthy results.
+
 ---
 
 [NeRF](http://www.matthewtancik.com/nerf) (Neural Radiance Fields) is a method that achieves state-of-the-art results for synthesizing novel views of complex scenes.
@@ -87,13 +89,14 @@ To compute distances and actually determine failure modes, be sure to edit the r
 
 Make sure to first configure the settings for your validation job in `envConfig.json`. The following settings we configure for safety validation are:
 
-* "simulator"
-* "stress_test"
-* "n_simulations"
-* "x_range"
-* "y_range"
-* "z_range"
-* "steps"
+* "simulator" - Simulator to use in validation ('NerfSimulator' or 'BlenderSimulator')
+* "stress_test" - Stress test to use in validation ('Monte Carlo' or 'Cross Entropy Method')
+* "uq_method" - Uncertainty quantification method to use in safety-masked reward function ('Gaussian Approximation' or 'Bayesian Laplace Approximation')
+* "n_simulations" - Number of simulations to run in saftey validation
+* "x_range" - minimum and maximum values that the planner can take on the x-axis (e.g. '[-1.15, 0.8]')
+* "y_range" - minimum and maximum values that the planner can take on the y-axis
+* "z_range" - minimum and maximum values that the planner can take on the z-axis
+* "steps" - number of steps to take in trajectory
   
 ### Training a NeRF
 
@@ -101,9 +104,14 @@ Make sure to first configure the settings for your validation job in `envConfig.
 python main_nerf.py data/nerf_synthetic/{data_name} --workspace {model_name_nerf} -O --bound {X} --scale 1.0 --dt_gamma 0
 ```
 
-### Safety Validation
+### Safety Validation (w/ online UQ)
 ```
-python3 validate.py data/nerf_synthetic/{data_name} --workspace {model_name_nerf} -O --bound {X} --scale 1.0 --dt_gamma 0
+python validate.py data/nerf_synthetic/{data_name} --workspace {model_name_nerf} -O --bound {X} --scale 1.0 --dt_gamma 0
+```
+
+### Uncertainty Quantification (offline)
+```
+python uncertain.py data/nerf_synthetic/{data_name} --workspace {model_name_nerf} -O --bound {X} --scale 1.0 --dt_gamma 0
 ```
 
 ### Tested environments
