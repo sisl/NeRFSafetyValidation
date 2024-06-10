@@ -10,10 +10,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from validation.utils.blenderUtils import runBlenderOnFailure
+from validation.utils.fileUtils import load_counts, save_counts
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed):
+def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, workspace, seed, start_iter):
     '''
     This function reads a CSV file and for each row where the last column is 'True', 
     it creates a BlenderSimulator instance and runs it with a noise vector derived from columns 3-14 of the row.
@@ -32,6 +33,7 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
         render_fn (function): A function to render the scene.
         blender_cfg (dict): The configuration for Blender.
         density_fn (function): A function to get the density of a point in space.
+        start_iter (int): An iteration number to start the script from.
     '''
 
     # read from csv resulting from simulations
@@ -46,7 +48,7 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
         with open(csv_file_path, 'r') as file:
             reader = csv.reader(file)
             for row in reader:
-                simulationNumber = row[0]
+                simulationNumber = int(row[0])
                 noise_vector = torch.from_numpy(np.array(row[2:14], dtype=np.float32)).to(device)
                 if simulationNumber not in simulationData:
                     simulationData[simulationNumber] = []
@@ -55,17 +57,18 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
                 simulationResult[simulationNumber].append([row[-2], row[-1]])
 
     # clear existing csv
-    if os.path.exists("results/replays/collisionValuesReplay.csv"):
+    if os.path.exists("results/replays/collisionValuesReplay.csv") and start_iter == 0:
         os.remove("results/replays/collisionValuesReplay.csv")
 
     # counts
-    tp_count_step, tn_count_step, fp_count_step, fn_count_step = 0, 0, 0, 0
-    tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = 0, 0, 0, 0
+    counts_filename = 'counts.pkl'
+    tp_count_step, tn_count_step, fp_count_step, fn_count_step, tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj = load_counts(counts_filename)
 
     # run replay validation
     simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, seed)
     print(f"Starting replay validation on BlenderSimulator")
-    for simulationNumber, simulationSteps in simulationData.items():
+    for simulationNumber in range(start_iter, len(simulationData.items())):
+        simulationSteps = simulationData[simulationNumber]
         simulator.reset()
         outputSimulationList = []
         simTrajLogLikelihood = 0
@@ -130,6 +133,9 @@ def replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_
             for outputStepList in outputSimulationList:
                 outputStepList.append(everCollided)
                 writer.writerow(outputStepList) 
+
+        counts = [tp_count_step, tn_count_step, fp_count_step, fn_count_step, tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj]
+        save_counts(counts, counts_filename)
 
     createConfusionMatrix(tp_count_step, tn_count_step, fp_count_step, fn_count_step, "step")
     createConfusionMatrix(tp_count_traj, tn_count_traj, fp_count_traj, fn_count_traj, "traj")

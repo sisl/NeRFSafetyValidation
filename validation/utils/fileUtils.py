@@ -1,3 +1,4 @@
+import pickle
 import shutil
 import os
 
@@ -43,3 +44,13 @@ def restore_poses(cached_pose_dir, cached_cost_dir, destination_dir):
         shutil.copy(os.path.join(cached_cost_dir, file), cost_dir)
     print("Using cached posts & costs!")
 
+def save_counts(counts, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(counts, f)
+
+def load_counts(filename):
+    if os.path.exists(filename):
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
+    else:
+        return [0, 0, 0, 0, 0, 0, 0, 0]  # default values

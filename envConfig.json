@@ -1,6 +1,7 @@
 {
   "simulator" : "NerfSimulator",
   "stress_test" : "Monte Carlo",
+  "uq_method": "Gaussian Approximation",
   "n_simulations" : 100,
   "estimator_cfg": {
     "dil_iter": 3,
@@ -25,6 +26,9 @@
     "blend_file": "stonehenge.blend"
   },
   "planner_cfg": {
+    "x_range": [-1.15, 0.8],
+    "y_range": [-1.2, 0.9],
+    "z_range": [0.05, 0.45],
     "start_pos": [-0.75, -0.235, 0.25],
     "end_pos": [0.2, -0.74, 0.3],
     "start_R": [0.0, 0.0, 0.0],

@@ -241,6 +241,7 @@ class NeRFRenderer(nn.Module):
 
         image = image.view(*prefix, 3)
         depth = depth.view(*prefix)
+        aggregated_density = torch.sum(weights * density_outputs['sigma'].view(*weights.shape), dim=1).view(*prefix)
 
         # tmp: reg loss in mip-nerf 360
         # z_vals_shifted = torch.cat([z_vals[..., 1:], sample_dist * torch.ones_like(z_vals[..., :1])], dim=-1)
@@ -251,6 +252,9 @@ class NeRFRenderer(nn.Module):
             'depth': depth,
             'image': image,
             'weights_sum': weights_sum,
+            'rgbs': rgbs,
+            'sigmas': density_outputs['sigma'],
+            'aggregated_density': aggregated_density
         }
 
 
@@ -372,9 +376,12 @@ class NeRFRenderer(nn.Module):
             depth = torch.clamp(depth - nears, min=0) / (fars - nears)
             image = image.view(*prefix, 3)
             depth = depth.view(*prefix)
+
         
         results['depth'] = depth
         results['image'] = image
+        results['sigmas'] = sigmas
+        results['rgbs'] = rgbs
 
         return results
 
@@ -555,6 +562,7 @@ class NeRFRenderer(nn.Module):
         if staged and not self.cuda_ray:
             depth = torch.empty((B, N), device=device)
             image = torch.empty((B, N, 3), device=device)
+            aggregated_density = torch.empty((B, N), device=device)
 
             for b in range(B):
                 head = 0
@@ -563,11 +571,16 @@ class NeRFRenderer(nn.Module):
                     results_ = _run(rays_o[b:b+1, head:tail], rays_d[b:b+1, head:tail], **kwargs)
                     depth[b:b+1, head:tail] = results_['depth']
                     image[b:b+1, head:tail] = results_['image']
+                    aggregated_density[b:b+1, head:tail] = results_['aggregated_density']
+
                     head += max_ray_batch
-            
+
             results = {}
             results['depth'] = depth
             results['image'] = image
+            results['rgbs'] = results_['rgbs']
+            results['sigmas'] = results_['sigmas']
+            results['aggregated_density'] = aggregated_density
 
         else:
             results = _run(rays_o, rays_d, **kwargs)

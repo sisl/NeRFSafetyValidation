@@ -3,6 +3,7 @@ import torch
 import csv
 from scipy.stats import norm
 import numpy as np
+from validation.simulators.NerfSimulator import NerfSimulator
 from validation.utils.blenderUtils import runBlenderOnFailure
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -12,7 +13,7 @@ class MonteCarlo(object):
     collisions = 0
     stepsToCollision = 0
 
-    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, blend_file, workspace):
+    def __init__(self, simulator, n_simulations, steps, noise_mean, noise_std, blend_file, workspace, start_iter):
         self.simulator = simulator
         self.n_simulations = n_simulations
         self.noise_mean = noise_mean
@@ -23,28 +24,37 @@ class MonteCarlo(object):
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = torch.Generator(device=device)
+        self.start_iter = start_iter
 
     def trajectoryLikelihood(self, noise):
         # get the likelihood of a noise measurement by finding each element's probability, logging each, and returning the sum
 
         likelihoods = norm.pdf(noise, loc = self.noise_mean_cpu, scale = self.noise_std_cpu)
+        likelihoods = np.clip(likelihoods, 1e-8, 1e8)
         logLikelihoods = np.log(likelihoods)
         return logLikelihoods.sum()
 
     def validate(self):
-        for simulationNumber in range(self.n_simulations):
+        for simulationNumber in range(self.start_iter, self.n_simulations):
             self.simulator.reset()
 
             outputSimulationList = []
             everCollided = False
             simTrajLogLikelihood = 0
+            reward = 0
+            noise_std = self.noise_std
 
             print(f"Starting simulation {simulationNumber}")
             for stepNumber in trange(self.steps):
-                # pdb.set_trace()
-                noise = torch.normal(self.noise_mean, self.noise_std, generator=self.noise_seed)
+                scaling_factor = 0.01 * noise_std
+                scaled_reward = reward * scaling_factor
+                adjusted_noise_std = noise_std + scaled_reward
+                noise = torch.normal(self.noise_mean, adjusted_noise_std, generator=self.noise_seed)
                 print(f"Step {stepNumber} with noise: {noise}")
-                isCollision, collisionVal, currentPos = self.simulator.step(noise)
+                if isinstance(self.simulator, NerfSimulator):
+                    isCollision, collisionVal, currentPos, sigma_d_opt, trace = self.simulator.step(noise)
+                else:
+                    isCollision, collisionVal, currentPos = self.simulator.step(noise)
                 outputStepList = [simulationNumber, stepNumber]
 
                 # append the noises
@@ -62,6 +72,12 @@ class MonteCarlo(object):
 
                 simTrajLogLikelihood += curLogLikelihood
                 outputStepList.append(simTrajLogLikelihood)
+
+                if isinstance(self.simulator, NerfSimulator):
+                    # calculate and handle reward/sigma
+                    outputStepList.append(reward)
+                    outputStepList.append(sigma_d_opt)
+                    reward = self.simulator.reward(curLogLikelihood, sigma_d_opt, trace)
                 
                 # output the collision value
                 outputStepList.append(isCollision)
@@ -86,8 +102,10 @@ class MonteCarlo(object):
             15-17: XYZ Coordinates
             18: step trajectory likelihood
             19: cumulative trajectory likelihood
-            20: did we collide on this step
-            21: did we collide on this simulation (added post facto)
+            20: reward applied to this step
+            21: Uncertainty for this step
+            21: did we collide on this step
+            22: did we collide on this simulation (added post facto)
             
             '''
             with open(f'./results/collisionValuesBlenderMC_n{self.n_simulations}.csv', "a") as csvFile:

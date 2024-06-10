@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from scipy.special import logsumexp
 from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
+from validation.simulators.NerfSimulator import NerfSimulator
 from validation.utils.blenderUtils import runBlenderOnFailure
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 from validation.utils.mathUtils import is_positive_definite
 
 class CrossEntropyMethod:
-    def __init__(self, simulator, q, p, m, m_elite, kmax, noise_seed, blend_file, workspace):
+    def __init__(self, simulator, q, p, m, m_elite, kmax, noise_seed, blend_file, workspace, start_iter, start_k):
         """
         Initialize the CrossEntropyMethod class.
 
@@ -39,6 +40,8 @@ class CrossEntropyMethod:
         self.blend_file = blend_file
         self.workspace = workspace
         self.noise_seed = noise_seed
+        self.start_iter = start_iter
+        self.start_k = start_k
         
 
         self.TOY_PROBLEM = False
@@ -60,7 +63,7 @@ class CrossEntropyMethod:
         eliteScores = []
         zeroedWeight = False # still unsure how this happens, but takes care of when the weights are all 0
 
-        for k in range(self.kmax):
+        for k in range(self.start_k, self.kmax):
             print(f"Starting population {k}")
             # sample and evaluate function on samples
             population = [] # 10 x 12 x 12 array (one noise for every simulation)
@@ -73,7 +76,7 @@ class CrossEntropyMethod:
                 # plot the path of each simulation
                 plt.figure()
             
-            for simulationNumber in range(self.m):
+            for simulationNumber in range(self.start_iter, self.m):
                 # ONE SIMULATION BELOW
                 self.simulator.reset()
                 noises = self.q.sample(simulationNumber)
@@ -82,6 +85,7 @@ class CrossEntropyMethod:
 
                 pCumulative = 0
                 qCumulative = 0
+                reward = 0
 
                 if self.TOY_PROBLEM:
                     positions = np.array([[0, 0]], dtype=float)
@@ -91,7 +95,10 @@ class CrossEntropyMethod:
 
                 for stepNumber in range(self.steps):
                     outputStepList = [k, simulationNumber, stepNumber] # list written to the CSV
-                    isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
+                    if isinstance(self.simulator, NerfSimulator):
+                        isCollision, collisionVal, currentPos, sigma_d_opt, trace = self.simulator.step(noises[stepNumber])
+                    else:
+                        isCollision, collisionVal, currentPos = self.simulator.step(noises[stepNumber])
 
                     if self.TOY_PROBLEM:
                         # append the current position to positions
@@ -99,6 +106,21 @@ class CrossEntropyMethod:
 
                     # append the noises
                     outputStepList.extend(trajectory[stepNumber])
+
+                    if isinstance(self.simulator, NerfSimulator):
+                        # calculate and handle reward/sigma
+                        outputStepList.append(reward)
+                        outputStepList.append(sigma_d_opt)
+                        curLogLikelihood = self.p.distributions[stepNumber].log_prob(noises[stepNumber])
+                        reward = self.simulator.reward(curLogLikelihood.cpu().numpy(), sigma_d_opt, trace)
+
+                        # adjust risk
+                        risk = collisionVal
+                        scaling_factor = 0.01 * risk
+                        scaled_reward = reward * scaling_factor
+                        adjusted_risk = risk - scaled_reward
+                        collisionVal = adjusted_risk
+
                     # append the sdf value and positions
                     outputStepList.append(collisionVal)
                     outputStepList.extend(currentPos)
@@ -147,6 +169,24 @@ class CrossEntropyMethod:
                 if everCollided:
                     print(f"Percentage of collisions: {self.collisions / (simulationNumber + 1) * 100}%")
                     print(f"Average number of steps to collision: {self.stepsToCollision / (self.collisions)}")
+
+                    '''
+                    Simulation data indexing for CrossEntropyMethod:
+                    0: Population #
+                    1: Simulation #
+                    2: Step #
+                    3-14: Noise data (12D)
+                    15: Reward applied to this step
+                    16: Uncertainty for this step
+                    17: SDF value at position
+                    18-20: XYZ Coordinates
+                    21: Step trajectory likelihood under p
+                    22: Step trajectory likelihood under q
+                    23: Cumulative trajectory likelihood under p
+                    24: Cumulative trajectory likelihood under q
+                    25: Did we collide on this step
+                    26: Did we collide on this simulation (added post facto)
+                    '''
 
                 if not self.TOY_PROBLEM:
                     # write results to CSV

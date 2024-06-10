@@ -5,6 +5,7 @@ import time
 import cv2
 import matplotlib.pyplot as plt
 from nav.math_utils import vec_to_rot_matrix, mahalanobis, rot_x, nerf_matrix_to_ngp_torch, calcSE3Err
+from uncertainty.quantification.hessian.HessianApproximator import HessianApproximator
 
 def find_POI(img_rgb, render=False): # img - RGB image in range 0...255
     img = np.copy(img_rgb)
@@ -240,6 +241,22 @@ class Estimator():
         rgb = torch.squeeze(output['image'])
 
         return rgb
+    
+    def render_for_uncertainty(self, pose):
+        rot = rot_x(torch.tensor(np.pi/2)) @ pose[:3, :3]
+        trans = pose[:3, 3]
+        pose, trans = nerf_matrix_to_ngp_torch(rot, trans)
+
+        new_pose = torch.eye(4)
+        new_pose[:3, :3] = pose
+        new_pose[:3, 3] = trans
+
+        rays = self.get_rays(new_pose.reshape((1, 4, 4)))
+
+        with torch.no_grad():
+            output = self.render_fn(rays["rays_o"], rays["rays_d"])
+
+        return output, rays["rays_o"], rays["rays_d"]
 
     def estimate_state(self, sensor_img, obs_img_pose, action):
         # Computes Jacobian w.r.t dynamics are time t-1. Then update state covariance Sig_{t|t-1}.
@@ -277,9 +294,7 @@ class Estimator():
         if self.is_filter is True and success_flag is True:
             #xt is 12-vector
             #Hessian is 12x12
-            # TODO: Figure out how to actually compute Hessian
-            hess = torch.eye(12)
-            # hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
+            hess = torch.autograd.functional.hessian(lambda x: self.measurement_fn(x, self.xt.clone().detach(), sig_prop, self.target, self.batch), xt.clone().detach())
 
             # #Turn covariance into positive definite
             # hess_np = hess.cpu().detach().numpy()

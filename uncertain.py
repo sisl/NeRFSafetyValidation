@@ -1,56 +1,249 @@
+from copy import deepcopy
+import os
 import random
-import subprocess
+from matplotlib import pyplot as plt
 import numpy as np
 import torch
 import argparse
 from nav.math_utils import vec_to_rot_matrix
 from nerf.provider import NeRFDataset
 from nerf.utils import PSNRMeter, Trainer, get_rays, seed_everything
-from validation.distributions.SeedableMultivariateNormal import SeedableMultivariateNormal
-from validation.simulators.NerfSimulator import NerfSimulator
-from validation.simulators.BlenderSimulator import BlenderSimulator
-from validation.stresstests.CrossEntropyMethod import CrossEntropyMethod
-from validation.stresstests.MonteCarlo import MonteCarlo
+from uncertainty.quantification.bayesian_laplace import BayesianLaplace
+from uncertainty.quantification.gaussian_approximation_density_uncertainty import GaussianApproximationDensityUncertainty
+from uncertainty.quantification.utils.nerfUtils import create_heatmap, load_camera_params
 import json
 
-from validation.utils.generatePath import generate_path, load_coords, save_coords
-from validation.utils.replay.replay_MC import replay_MC
-from validation.utils.replay.replay_CEM import replay_CEM
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+H = W = 800
 
 ####################### MAIN LOOP ##########################################
-def validate(simulator, stresstest, noise_mean, noise_std, n_simulations):    
-    if stresstest == "Monte Carlo":
-        print(f"Starting Monte Carlo test with {n_simulations} simulations and {steps} steps each")
-        mc = MonteCarlo(simulator, n_simulations, steps, noise_mean, noise_std, blend_file, opt.workspace, opt.iter)
-        mc.validate()
-    elif stresstest == "Cross Entropy Method":
-        print(f"Starting Cross Entropy Method test with {n_simulations} simulations and {steps} steps each")
-        
-        noise_meanQ = [noise_mean]*steps # 12 x steps
-        noise_covQ = torch.stack([torch.square(torch.diag(torch.tensor(noise_std)))]*steps) # 12 x 12 x steps
-        noise_meanP = [noise_mean]*steps # 12 x 12
-        noise_covP = torch.stack([torch.square(torch.diag(torch.tensor(noise_std)))]*steps) # 12 x 12 x steps
-        noise_seed = torch.Generator(device=device)
+def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=None, lr=None):
+    """
+    Compute the uncertainty using the specified method.
 
-        q = SeedableMultivariateNormal(noise_meanQ, noise_covQ, noise_seed=noise_seed)
-        p = SeedableMultivariateNormal(noise_meanP, noise_covP, noise_seed=noise_seed)
-        cem = CrossEntropyMethod(simulator, q, p, 10, 5, 5, noise_seed, blend_file, opt.workspace, opt.iter, opt.k)
-        means, covs, dists, best_solutionMean, best_solutionCov, best_objective_value = cem.optimize()
-        print(f"Means: {means}")
-        print(f"Covariance Matrices: {covs}")
-        print(f"Final proposal distribution: {dists}")
-        print(f"Best solution means: {best_solutionMean}")
-        print(f"Best solution covariance matrix: {best_solutionCov}")  
-        print(f"Best objective value: {best_objective_value}")  
+    Parameters:
+    method (str): Name of the uncertainty computation method.
+    """
+    ac, au = 0, 0
+    if method == "Gaussian Approximation":
+        print(f"Starting Gaussian Approximation for Uncertainty Quantification of Volume Density")
+        results = {"optimized_mu_d": [], "optimized_sigma_d": []}
+        varNames = ["optimized_mu_d", "optimized_sigma_d"]
+        if path_to_images is not None:
+            for i, image_name in enumerate(os.listdir(path_to_images)):
+                # OFFLINE METHOD
+
+                # load corresponding camera parameters
+                image_name = f'./train/{image_name}'
+                cam_param = load_camera_params(image_name, opt.path)
+                cam_param = torch.tensor([cam_param])
+
+                # render the image using NeRF
+                rays = get_rays_fn(cam_param)
+                rays_o = rays["rays_o"].reshape((H, W, -1))
+                rays_d = rays["rays_d"].reshape((H, W, -1))
+
+                with torch.no_grad():
+                    output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+                # extract color/density values
+                c = output['rgbs']
+                d = output['sigmas']
+
+                # extract rendered color
+                r = output['image']            
+
+                # optimize parameters
+                gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
+                mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
+
+                # TODO: potentially use this to calculate RMSE & MAE
+                # gaussian_dist = torch.distributions.Normal(mu_d_opt, sigma_d_opt)
+                # preds = gaussian_dist.sample()
+                # errors = preds_from_orig_dist - preds
+                # rmse = np.sqrt(np.mean(errors**2))
+                # mae = np.mean(np.abs(errors))
+
+                # check for absolute certain/uncertain values
+                if sigma_d_opt <= 0:
+                    ac += 1
+                elif sigma_d_opt >= 3:
+                    au += 1
+                else:
+                    results["optimized_mu_d"].append(mu_d_opt)
+                    results["optimized_sigma_d"].append(sigma_d_opt)
+
+                print(f"Image #{i} ({image_name}): mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+        else:
+            # ONLINE METHOD
+            # extract color/density values
+            c = rendered_output[0]['rgbs']
+            d = rendered_output[0]['sigmas']
+
+            # extract rendered color
+            r = rendered_output[0]['image']            
+
+            # optimize parameters
+            gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
+            mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
+
+            print(f"mu_d_opt = {mu_d_opt}, sigma_d_opt = {sigma_d_opt}")
+            return mu_d_opt, sigma_d_opt
+        create_heatmap(results["optimized_mu_d"], results["optimized_sigma_d"])
+
+    elif method == "Bayesian Laplace Approximation":
+        print(f"Starting Bayesian Laplace Approximation for Uncertainty Quantification of Volume Density")
+        results = {"trace": [], "rmv": []}
+        varNames = ["trace", "rmv"]
+        if path_to_images is not None:
+            model_copy = deepcopy(model)
+            theta_copy = np.concatenate([param.detach().cpu().numpy().ravel() for param in model.sigma_net.parameters()])
+            for i, image_name in enumerate(os.listdir(path_to_images)):
+                # OFFLINE METHOD
+
+                # reset params
+                start = 0
+                for param in model_copy.sigma_net.parameters():
+                    end = start + param.numel()
+                    if isinstance(theta_copy, np.ndarray):
+                        new_vals = torch.from_numpy(theta_copy[start:end]).view(param.shape)
+                    else:  # Assuming it's already a PyTorch tensor
+                        new_vals = theta_copy[start:end].view(param.shape)
+                    param.data.copy_(new_vals)
+                    start = end
+
+                # load corresponding camera parameters
+                image_name = f'./train/{image_name}'
+                cam_param = load_camera_params(image_name, opt.path)
+                cam_param = torch.tensor([cam_param])
+
+                # render the image using NeRF
+                rays = get_rays_fn(cam_param)
+                rays_o = rays["rays_o"].reshape((H, W, -1))
+                rays_d = rays["rays_d"].reshape((H, W, -1))
+                X = rays_o.unsqueeze(-2) + rays_d.unsqueeze(-2)
+
+                with torch.no_grad():
+                    output = render_fn(rays_o.reshape((1, -1, 3)), rays_d.reshape((1, -1, 3)))
+
+                # extract aggregated density values
+                d = output['aggregated_density']           
+
+                # initialize BayesianLaplace object
+                prior_mean = 0.0
+                prior_std = 1.0
+                bayesian_laplace = BayesianLaplace(model_copy, prior_mean, prior_std, opt.lr)
+
+                # fit the model
+                bayesian_laplace.fit(X, d)
+
+                # get optimized parameters
+                pos_mu = bayesian_laplace.get_posterior_mean()
+                pos_cov = bayesian_laplace.get_posterior_cov()
+                n = pos_cov.shape[0]
+                
+                # ensure numeric stability
+                diag_indices = np.diag_indices(n)
+                pos_cov[diag_indices] = np.maximum(0, pos_cov[diag_indices])
+
+                # TODO: potentially calculate RMSE & MAE like so:
+                # errors = d - mu_d_opt
+                # rmse = np.sqrt(np.mean(errors**2))
+                # mae = np.mean(np.abs(errors))
+
+                # Trace of the covariance matrix
+                trace = np.trace(pos_cov) / n
+                
+                # root mean variance of diag elements of covariance matrix
+                root_mean_variance = np.sqrt(np.mean(np.diag(pos_cov))) / n
+
+                # frobenius_norm = np.linalg.norm(pos_cov, ord='fro') / n
+                # print("FROBENIUS NORM")
+                # print(frobenius_norm)
+
+                # check for absolute certain/uncertain values
+                # if pos_cov <= 0:
+                #     ac += 1
+                # elif pos_cov >= 3:
+                #     au += 1
+                # else:
+                # results["pos_mu"].append(pos_mu)
+                # results["pos_cov"].append(pos_cov)
+                results["trace"].append(trace)
+                results["rmv"].append(root_mean_variance)
+
+                # delete tensors and free up GPU memory
+                del bayesian_laplace, pos_mu, pos_cov
+                torch.cuda.empty_cache()
+
+                print(f"Image #{i} ({image_name}): trace = {trace}, rmv = {root_mean_variance}")
+        else:
+            # ONLINE METHOD
+            model_theta_init = np.concatenate([param.detach().cpu().numpy().ravel() for param in model_to_use.sigma_net.parameters()])
+
+            # extract aggregated density values
+            d = rendered_output[0]['aggregated_density']       
+
+            rays_o = rendered_output[1].reshape((H, W, -1))
+            rays_d = rendered_output[2].reshape((H, W, -1))
+            X = rays_o.unsqueeze(-2) + rays_d.unsqueeze(-2)
+
+            # initialize BayesianLaplace object
+            prior_mean = 0.0
+            prior_std = 1.0
+            bayesian_laplace = BayesianLaplace(model_to_use, prior_mean, prior_std, lr)
+
+            # fit the model
+            bayesian_laplace.fit(X, d)
+
+            # get optimized parameters
+            pos_mu = bayesian_laplace.get_posterior_mean()
+            pos_cov = bayesian_laplace.get_posterior_cov()
+            n = pos_cov.shape[0]
+
+            # ensure numeric stability
+            diag_indices = np.diag_indices(n)
+            pos_cov[diag_indices] = np.maximum(0, pos_cov[diag_indices])
+
+            # Trace of the covariance matrix
+            trace = np.trace(pos_cov) / n
+            
+            # Standard deviation of diag elements of covariance matrix
+            root_mean_variance = np.sqrt(np.mean(np.diag(pos_cov))) / n
+
+            print(f"trace = {trace}, rmv = {root_mean_variance}")
+
+            # reset params
+            start = 0
+            for param in model_to_use.sigma_net.parameters():
+                end = start + param.numel()
+                if isinstance(model_theta_init, np.ndarray):
+                    new_vals = torch.from_numpy(model_theta_init[start:end]).view(param.shape)
+                else:  # Assuming it's already a PyTorch tensor
+                    new_vals = model_theta_init[start:end].view(param.shape)
+                param.data.copy_(new_vals)
+                start = end
+
+            # delete tensors and free up GPU memory
+            del bayesian_laplace, pos_mu, pos_cov
+            torch.cuda.empty_cache()
+
+            return trace, root_mean_variance
+        create_heatmap(results["trace"], results["rmv"])
     else:
-        print(f"Unrecognized stress test {stresstest}")
+        print(f"Unrecognized uncertainty quantification method {method}")
         exit()
 
-    # Visualize trajectories in Blender
-    bevel_depth = 0.02      # Size of the curve visualized in blender
-    subprocess.run(['blender', blend_file, '-P', 'viz_data_blend.py', '--background', '--', opt.workspace, str(bevel_depth)])
+    # visualize uncertainty
+    print(f'Number of absolute certain values: {ac}')
+    print(f'Number of absolute uncertain values: {au}')
+    for varName in varNames:
+        plt.hist(results[varName], bins=8)
+        plt.xlabel(f'Uncertainty ({varName})')
+        plt.ylabel('Frequency')
+        plt.savefig(f'results/uncertainty_{method}_{varName}.png')
+        plt.show()
+        plt.close()
     return
 
 ####################### END OF MAIN LOOP ##########################################
@@ -61,10 +254,9 @@ if __name__ == "__main__":
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --preload")
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', type=int, default=random.randint(0, 99999999))
-    parser.add_argument('--iter', type=int, default=0)
-    parser.add_argument('--k', type=int, default=0)
 
     ### training options
+    parser.add_argument('--lr', type=float, default=1e-2, help="initial learning rate")
     parser.add_argument('--ckpt', type=str, default='latest')
     parser.add_argument('--num_rays', type=int, default=4096, help="num rays sampled per image for each training step")
     parser.add_argument('--cuda_ray', action='store_true', help="use CUDA raymarching instead of pytorch")
@@ -104,9 +296,6 @@ if __name__ == "__main__":
     parser.add_argument('--clip_text', type=str, default='', help="text input for CLIP guidance")
     parser.add_argument('--rand_pose', type=int, default=-1, help="<0 uses no rand pose, =0 only uses rand pose, >0 sample one rand pose every $ known poses")
 
-    ### validation replay
-    parser.add_argument('--r', action='store_true', help="run failures from a NerfSimulator run on BlenderSimulator")
-
     opt = parser.parse_args()
 
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -134,16 +323,6 @@ if __name__ == "__main__":
 
     ### PLANNER CONFIGS
     planner_cfg = envConfig["planner_cfg"]
-
-    # generate random path
-    x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
-    y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
-    z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
-    if opt.r or (opt.iter != 0 or opt.k != 0):
-        start_pos, end_pos, steps = load_coords()
-    else:
-        start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
-        save_coords(start_pos, end_pos, steps)
 
     seed_everything(opt.seed)
 
@@ -190,8 +369,8 @@ if __name__ == "__main__":
 
     # X, Y, Z
     #STONEHENGE
-    # start_pos = planner_cfg["start_pos"]      # Starting position [x,y,z]
-    # end_pos = planner_cfg["end_pos"]        # Goal position
+    start_pos = planner_cfg["start_pos"]      # Starting position [x,y,z]
+    end_pos = planner_cfg["end_pos"]        # Goal position
     
     # start_pos = [-0.09999999999999926,
     #             -0.8000000000010297,
@@ -237,11 +416,7 @@ if __name__ == "__main__":
     ### Trajectory optimization config ###
     #Store configs in dictionary
     planner_cfg = {
-    "x_range": x_range,
-    "y_range": y_range,
-    "z_range": z_range,
     "T_final": T_final,
-    "steps": steps,
     "lr": planner_lr,
     "epochs_init": epochs_init,
     "fade_out_epoch": fade_out_epoch,
@@ -289,56 +464,8 @@ if __name__ == "__main__":
     # Rendering from the NeRF functions
     render_fn = lambda rays_o, rays_d: model.render(rays_o, rays_d, staged=True, bg_color=1., perturb=False, **vars(opt))
     get_rays_fn = lambda pose: get_rays(pose, dataset.intrinsics, dataset.H, dataset.W)
-
-    if simulator_cfg == "NerfSimulator":
-        simulator = NerfSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, uq_method, model, opt.seed)
-    elif simulator_cfg == "BlenderSimulator":
-        simulator = BlenderSimulator(start_state, end_state, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, opt.seed)
-    else:
-        print(f"Unrecognized simulator {simulator_cfg}")
-        exit()
   
-    # noises are sampled from means and standard deviations in envConfig.json
-    noise_std = extra_cfg['mpc_noise_std']
-    noise_mean = extra_cfg['mpc_noise_mean']
-
-    if opt.r:
-        if stress_test == "Monte Carlo":
-            replay_MC(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed, opt.iter)
-        elif stress_test == "Cross Entropy Method":
-            replay_CEM(start_state, end_state, noise_mean, noise_std, agent_cfg, planner_cfg, camera_cfg, filter_cfg, get_rays_fn, render_fn, blender_cfg, density_fn, blend_file, opt.workspace, opt.seed, opt.iter, opt.k)
-        else:
-            print(f"Unrecognized stress test {stress_test}")
-            exit()
-    else:
-        while True:
-            try:
-                # Main loop
-                validate(simulator, stress_test, noise_mean, noise_std, n_simulations)
-                break
-            except (ValueError, AssertionError):
-                # no path exists through randomly generated points, so restart w/ new path
-                print("Path not found; restarting with new path...")
-                opt.seed += random.randint(0, 10)
-                seed_everything(opt.seed)
-                simulator.seed = opt.seed
-                x_range = planner_cfg["x_range"] # bounding X coordinate range for stonehenge
-                y_range = planner_cfg["y_range"] # bounding Y coordinate range for stonehenge
-                z_range = planner_cfg["z_range"] # bounding Z coordinate range for stonehenge
-                start_pos, end_pos, steps = generate_path(x_range, y_range, z_range)
-                save_coords(start_pos, end_pos, steps)
-                start_pos = torch.tensor(start_pos).float()
-                end_pos = torch.tensor(end_pos).float()
-
-                start_state = torch.cat( [start_pos, init_rates, start_R.reshape(-1), init_rates], dim=0 )
-                end_state   = torch.cat( [end_pos,   init_rates, end_R.reshape(-1), init_rates], dim=0 )
-
-                planner_cfg['start_state'] = start_state.to(device)
-                planner_cfg['end_state'] = end_state.to(device)
-
-                simulator.start_state = start_state
-                simulator.end_state = end_state
-
-    
-    end_text = 'End of validation'
+    uncertainty(uq_method, path_to_images=os.path.join(opt.path, "train"))
+  
+    end_text = 'End of uncertainty computation'
     print(f'{end_text:.^20}')

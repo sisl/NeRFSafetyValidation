@@ -6,16 +6,7 @@ import numpy as np
 D = bpy.data
 C = bpy.context
 
-COLLISION_MESHES = [
-    D.objects["Mesh_0"],
-    D.objects["Mesh_1"],
-    D.objects["Mesh_2"],
-    D.objects["Mesh_3"],
-    D.objects["Mesh_4"],
-    D.objects["Mesh_5"],
-    D.objects["Mesh_6"],
-    D.objects["Mesh_7"],
-]
+COLLISION_MESHES = [obj for obj in D.objects if obj.type == 'MESH']
 
 GRANULARITY = 40 # how many points to sample per world meter. 
 # 1 meter in the grid world is approximately 20 meters in the real world
@@ -23,12 +14,13 @@ GRANULARITY = 40 # how many points to sample per world meter.
 # this means our drone is approximately 50 cm wide and 50 cm long (and 50 cm tall)
 
 # define the range of the collision map in world coordinates. We got these from looking at the scene in Blender
-START_X = -1.4
-END_x = 1
-START_Y = -1.3
-END_Y = 1
-START_Z = -0.1
-END_Z = 0.5
+GRANULARITY = 40
+START_X = -1.2
+END_x = 0.6
+START_Y = -1.2
+END_Y = 1.2
+START_Z = -0.22
+END_Z = 1.2
 
 def worldToIndex(world, start, granularity):
     return int(np.floor((world - start) * granularity))
