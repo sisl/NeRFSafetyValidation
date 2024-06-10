@@ -57,6 +57,13 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 gaussian_approximation = GaussianApproximationDensityUncertainty(c, d, r)
                 mu_d_opt, sigma_d_opt = gaussian_approximation.optimize()
 
+                # TODO: potentially use this to calculate RMSE & MAE
+                # gaussian_dist = torch.distributions.Normal(mu_d_opt, sigma_d_opt)
+                # preds = gaussian_dist.sample()
+                # errors = preds_from_orig_dist - preds
+                # rmse = np.sqrt(np.mean(errors**2))
+                # mae = np.mean(np.abs(errors))
+
                 # check for absolute certain/uncertain values
                 if sigma_d_opt <= 0:
                     ac += 1
@@ -138,6 +145,11 @@ def uncertainty(method, path_to_images=None, rendered_output=None, model_to_use=
                 # ensure numeric stability
                 diag_indices = np.diag_indices(n)
                 pos_cov[diag_indices] = np.maximum(0, pos_cov[diag_indices])
+
+                # TODO: potentially calculate RMSE & MAE like so:
+                # errors = d - mu_d_opt
+                # rmse = np.sqrt(np.mean(errors**2))
+                # mae = np.mean(np.abs(errors))
 
                 # Trace of the covariance matrix
                 trace = np.trace(pos_cov) / n
